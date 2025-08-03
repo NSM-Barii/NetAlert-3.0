@@ -27,6 +27,59 @@ class Utilities():
 
     def __init__(self):
         pass
+    
+
+
+    @classmethod
+    def get_interface(cls):
+        """This method will be used to get the user interface and automatically create a file saving it for default use"""
+
+        
+        try:
+            # SET DEFAULT IFACE IF AVAILABLE
+            data = File_Handling.get_json()
+            def_iface = data['iface']
+
+
+            # GIVE OPTION FOR DEFAULT
+            if def_iface != "":
+                use = f"or press enter for {def_iface}"
+            
+            else:
+                use = ""
+
+            
+            while True:
+                iface = console.input(f"[bold blue]Enter iface {use}: ").strip()
+                
+
+                # NEED SOME TYPE OF IFACE
+                if iface == "" and def_iface == "":
+
+                    console.print("You must enter iface to procced silly", style="bold red")
+
+                
+                # ROLL BACK TO DEFAUT
+                elif iface == "":
+                    iface = def_iface
+
+                    return iface
+                
+
+                
+                # SET NEW DEF IFACE
+                else:
+                    data['iface'] = iface
+                    
+                    # NOW TO UPDATE SETTINGS
+                    File_Handling.push_json(data=data)
+
+                    return iface
+            
+
+        # ERROR 
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[yello] {e}")
 
 
 

@@ -44,59 +44,6 @@ class Network_Sniffer():
         pass
 
 
-
-
-    @classmethod
-    def get_interface(cls):
-        """This method will be used to get the user interface and automatically create a file saving it for default use"""
-
-        
-        try:
-            # SET DEFAULT IFACE IF AVAILABLE
-            data = File_Handling.get_json()
-            def_iface = data['iface']
-
-
-            # GIVE OPTION FOR DEFAULT
-            if def_iface != "":
-                use = f"or press enter for {def_iface}"
-            
-            else:
-                use = ""
-
-            
-            while True:
-                iface = console.input(f"[bold blue]Enter iface {use}: ").strip()
-                
-
-                # NEED SOME TYPE OF IFACE
-                if iface == "" and def_iface == "":
-
-                    console.print("You must enter iface to procced silly", style="bold red")
-
-                
-                # ROLL BACK TO DEFAUT
-                elif iface == "":
-                    iface = def_iface
-
-                    return iface
-                
-
-                
-                # SET NEW DEF IFACE
-                else:
-                    data['iface'] = iface
-                    
-                    # NOW TO UPDATE SETTINGS
-                    File_Handling.push_json(data=data)
-
-                    return iface
-            
-
-        # ERROR 
-        except Exception as e:
-            console.print(f"[bold red]Exception Error:[yello] {e}")
-
     
     @classmethod
     def packet_sniffer(cls, iface="wlan0", filter=""):
@@ -152,7 +99,7 @@ class Network_Sniffer():
             
 
                 # SNIFF TRAFFIC
-                sniff(iface=iface, prn=Network_Sniffer.packet_parser, filter=filter)
+                sniff(iface=iface, prn=Network_Sniffer.packet_parser, filter=filter, store=0)
         
 
         
@@ -268,7 +215,11 @@ class Network_Sniffer():
         # IF VERBOSE
         if cls.verbose:
             console.print(f"[bold red][+][/bold red] {proto} - {ip_src}:{port_src} --> {ip_dst}:{port_dst}  -  TTL: {pkt_ttl}  Len: {pkt_len}")
+        
 
+
+        # DELAY
+        time.sleep(0.1)
         
         # PUSH INFO TO SQL DB
         Utilities.push_sql_db(proto=proto, 
@@ -308,3 +259,4 @@ class Network_Sniffer():
 if __name__ == "__main__":
 
     Network_Sniffer.main()
+    
