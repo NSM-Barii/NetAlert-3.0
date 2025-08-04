@@ -152,7 +152,9 @@ class File_Handling():
                 path = cls.base_dir / "settings.json"
                 data = {
                         "iface": "",
-                        "captures": ""
+                        "captures": "",
+                        "nodes_online": 0,
+                        "nodes_offline": 0
                     }
 
 

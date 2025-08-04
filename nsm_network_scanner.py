@@ -29,6 +29,7 @@ import pandas as pd, numpy, sqlite3
 # NSM IMPORTS
 from nsm_utilities import Utilities
 from nsm_network_sniffer import Network_Sniffer
+from nsm_files import File_Handling
 
 
 # PREVENT RACE CONIDTIONS
@@ -203,6 +204,9 @@ class Network_Scanner():
                     else:
                         cls.nodes_online += 1
 
+                        # PUSH STATUS
+                        Network_Scanner.node_changer(node_online=1)
+
                 
 
                 # ALREADY ONLINE
@@ -219,19 +223,33 @@ class Network_Scanner():
                 # NO RESPONSE // NOW OFFLINE
                 else:
 
+                    if online == False:
 
-                    if verbose:
-                        console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
 
+
+                        if verbose:
+                            console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
+
+                        
+
+                        # UPDATE CLS STATUS
+                        cls.nodes_offline += 1
+                        cls.nodes_online -= 1
+
+                        # PUSH STATUS
+                        Network_Scanner.node_changer(node_offline=1, node_online=-1)
+
+
+
+                        # APPEND DELAY // REDUCE NETWORK TRAFFIC
+                        delay += 5 if delay < 20 else 0
                     
+                    
+                    # TRY ONE MORE PING BEFORE WE MAKE IT OFFLINE
+                    else:
 
-                    # UPDATE CLS STATUS
-                    cls.nodes_offline += 1
-                    cls.nodes_online -= 1
-
-
-                    # APPEND DELAY // REDUCE NETWORK TRAFFIC
-                    delay += 5 if delay < 20 else 0
+                        delay = 0
+                        online = False
                 
 
 
@@ -241,6 +259,23 @@ class Network_Scanner():
 
             except Exception as e:
                 console.print(f"Exception Error: ")
+    
+
+    @classmethod
+    def node_changer(cls, node_online=0, node_offline=0):
+        """This method will be responsible for updating node status to a json file"""
+        
+
+        # PULL JSON
+        data = File_Handling.get_json(verbose=True)
+
+        data["nodes_online"] += node_online
+        data["nodes_offline"] += node_offline
+
+
+        # PUSH JSON
+        File_Handling.push_json(data=data, verbose=True)
+
 
 
     @classmethod
