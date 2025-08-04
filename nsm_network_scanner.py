@@ -12,7 +12,7 @@ console = Console()
 
 
 # NETWORK IMPORTS
-from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, srp, Ether
+from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, srp, Ether, sr1
 import socket, requests
 
 
@@ -48,7 +48,7 @@ class Network_Scanner():
 
 
     @classmethod
-    def threader(cls, iface, target):
+    def controller(cls, iface, target):
         """This method will be responsible for handling the --> subnet_scanner <-- method with parallism"""
 
 
@@ -59,8 +59,8 @@ class Network_Scanner():
 
 
         # START BACKGROUND PACKET SNIFFER
-        threading.Thread(target=Network_Sniffer.main, args=(iface, console), daemon=True).start()
-        console.print("[bold red][+][bold yellow] Thread 2 started")
+       # threading.Thread(target=Network_Sniffer.main, args=(iface, console), daemon=True).start()
+       # console.print("[bold red][+][bold yellow] Thread 2 started")
 
 
         # VERBOSE OFF
@@ -91,7 +91,11 @@ class Network_Scanner():
 
 
                 # UPDATE RENDERABLE 
-                panel.renderable = (f"[{c2}]Packets Sniffed:[/{c2}] {(Network_Sniffer.total_packets)}   -  [{c2}]Online Nodes:[/{c2}] {len(cls.subnet_devices)}  -  [{c2}]Offline Nodes:[/{c2}] 0  -  [{c1}]NetAlert-3.0 by Developed NSM Barii")
+                panel.renderable = (f"[{c2}]Packets Sniffed:[/{c2}] 0   -  [{c2}]Online Nodes:[/{c2}] {cls.nodes_online}  -  [{c2}]Offline Nodes:[/{c2}] {cls.nodes_offline}   -  [{c1}]NetAlert-3.0 by Developed NSM Barii")
+    
+
+
+
 
             
     @classmethod
@@ -103,6 +107,7 @@ class Network_Scanner():
         c1 = "bold red"
         c2 = "bold green"
         c3 = "bold yellow"
+        num = 0
         
 
         while cls.SNIFF:
@@ -120,24 +125,122 @@ class Network_Scanner():
                 target_mac = recv.hwsrc
 
 
-                if target_ip not in cls.subnet_devices[0]:
+                if target_ip not in cls.subnet_devices:
                     
 
                     # MAKE A TUPLE
                     node = (target_ip, target_mac)
                     
                     # APPEND TO LIST
-                    cls.subnet_devices.append(node)
+                    cls.subnet_devices.append(target_ip)
                 
 
-                # ALERT THE USER
-                console.print(f"[{c1}][+] [{c2}]Found Device:[/{c2}] {target_ip} [{c3}]<--->[/{c3}] {target_mac}")
+                    # ALERT THE USER
+                    console.print(f"[{c1}][+] [{c2}]New Device:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}")
+
+
+                    # TRACK DEVICE CONNECTION STATUS
+                    threading.Thread(target=Network_Scanner.node_tracker, args=(target_ip, ), daemon=True).start()
         
 
             
             # NOW WAIT UNTIL NEXT SCAN
+            num += 1
+            console.print(f"Loop #{num}", style="bold red")
             time.sleep(cls.scan_delay)
         
+    
+
+    @classmethod
+    def node_tracker(cls, target_ip, timeout=5, verbose=0):
+        """This method will be responsible for tracking node connection status"""
+
+
+        # SET VARS
+        online = False
+        delay = 10
+
+
+        # COLORS
+        c1 = "bold red"
+        c2 = "bold green"
+        c3 = "bold yellow"
+        c4 = "bold purple"
+
+
+
+        # CREATE PING 
+        ping = IP(dst=target_ip) / ICMP()
+        
+
+        # LOOP 
+        while cls.SNIFF:
+
+                
+            # GET RESPONSE
+            response = sr1(ping, timeout=timeout, verbose=verbose)
+
+
+            
+            # NOW ONLINE
+            if response and online==False:
+
+
+                # SET ONLINE
+                online = True
+                delay = 10
+
+
+                if verbose:
+                    console.print(f"[{c1}][+][/{c1}] Node Online: [{c3}]{target_ip} ")
+
+
+                
+                # UPDATE CLS STATUS
+                cls.nodes_online += 1
+
+            
+
+            # ALREADY ONLINE
+            elif response:
+
+
+
+                if verbose:
+                    console.print(f"[{c1}][+][/{c1}] Still online: [{c3}]{target_ip}")
+
+
+            
+
+
+            # NO RESPONSE // NOW OFFLINE
+            else:
+
+
+                if verbose:
+                    console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
+
+                
+
+                # UPDATE CLS STATUS
+                cls.nodes_offline += 1
+                cls.nodes_online -= 1
+
+
+                # APPEND DELAY
+                delay += 5 if delay < 60 else 0
+            
+
+
+            # WAIT OUT THE DELAY
+            time.sleep(delay)
+
+
+            
+        
+
+        
+
 
 
 
@@ -152,15 +255,19 @@ class Network_Scanner():
         cls.scan_delay = 60
         cls.subnet_devices = []
 
+        cls.nodes_online = 0
+        cls.nodes_offline = 0
+
 
 
 
         # GET IFACE
         iface = Utilities.get_interface()
-
+        
+        time.sleep(1)
 
         # PERFORM ARP SCAN
-        Network_Scanner.threader(iface=iface, target="192.168.1.0/24")
+        Network_Scanner.controller(iface=iface, target="192.168.1.0/24")
 
 
 
