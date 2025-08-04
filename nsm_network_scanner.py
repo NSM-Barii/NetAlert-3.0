@@ -94,10 +94,6 @@ class Network_Scanner():
                 panel.renderable = (f"[{c2}]Packets Sniffed:[/{c2}] 0   -  [{c2}]Online Nodes:[/{c2}] {cls.nodes_online}  -  [{c2}]Offline Nodes:[/{c2}] {cls.nodes_offline}   -  [{c1}]NetAlert-3.0 by Developed NSM Barii")
     
 
-
-
-
-            
     @classmethod
     def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=True):
         """This will perform a ARP scan"""
@@ -149,7 +145,6 @@ class Network_Scanner():
             console.print(f"Loop #{num}", style="bold red")
             time.sleep(cls.scan_delay)
         
-    
 
     @classmethod
     def node_tracker(cls, target_ip, timeout=5, verbose=0):
@@ -159,6 +154,10 @@ class Network_Scanner():
         # SET VARS
         online = False
         delay = 10
+
+        # SET ONLINE NOW
+        cls.nodes_online += 1
+        first = True
 
 
         # COLORS
@@ -176,73 +175,72 @@ class Network_Scanner():
         # LOOP 
         while cls.SNIFF:
 
-                
-            # GET RESPONSE
-            response = sr1(ping, timeout=timeout, verbose=verbose)
-
-
             
-            # NOW ONLINE
-            if response and online==False:
+            try:
 
-
-                # SET ONLINE
-                online = True
-                delay = 10
-
-
-                if verbose:
-                    console.print(f"[{c1}][+][/{c1}] Node Online: [{c3}]{target_ip} ")
+                # GET RESPONSE
+                response = sr1(ping, timeout=timeout, verbose=verbose)
 
 
                 
-                # UPDATE CLS STATUS
-                cls.nodes_online += 1
-
-            
-
-            # ALREADY ONLINE
-            elif response:
+                # NOW ONLINE
+                if response and online==False:
 
 
-
-                if verbose:
-                    console.print(f"[{c1}][+][/{c1}] Still online: [{c3}]{target_ip}")
-
-
-            
+                    # SET ONLINE
+                    online = True
+                    delay = 10
 
 
-            # NO RESPONSE // NOW OFFLINE
-            else:
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Node Online: [{c3}]{target_ip} ")
 
 
-                if verbose:
-                    console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
+                    
+                    # UPDATE CLS STATUS
+                    if first:
+                        first = False
+                    else:
+                        cls.nodes_online += 1
 
                 
 
-                # UPDATE CLS STATUS
-                cls.nodes_offline += 1
-                cls.nodes_online -= 1
+                # ALREADY ONLINE
+                elif response:
 
 
-                # APPEND DELAY
-                delay += 5 if delay < 60 else 0
+
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Still online: [{c3}]{target_ip}")
+
+                
+
+
+                # NO RESPONSE // NOW OFFLINE
+                else:
+
+
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
+
+                    
+
+                    # UPDATE CLS STATUS
+                    cls.nodes_offline += 1
+                    cls.nodes_online -= 1
+
+
+                    # APPEND DELAY // REDUCE NETWORK TRAFFIC
+                    delay += 5 if delay < 20 else 0
+                
+
+
+                # WAIT OUT THE DELAY
+                time.sleep(delay)
             
 
-
-            # WAIT OUT THE DELAY
-            time.sleep(delay)
-
-
-            
-        
-
-        
-
-
-
+            except Exception as e:
+                console.print(f"Exception Error: ")
 
 
     @classmethod
@@ -252,7 +250,7 @@ class Network_Scanner():
 
         # SET VARS
         cls.SNIFF = True
-        cls.scan_delay = 60
+        cls.scan_delay = 20
         cls.subnet_devices = []
 
         cls.nodes_online = 0
