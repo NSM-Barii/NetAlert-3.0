@@ -28,7 +28,6 @@ import pandas as pd, numpy, sqlite3
 
 # NSM IMPORTS
 from nsm_utilities import Utilities
-from nsm_files import File_Handling
 
 
 # PREVENT RACE CONIDTIONS
@@ -46,7 +45,7 @@ class Network_Sniffer():
 
     
     @classmethod
-    def packet_sniffer(cls, iface="wlan0", filter=""):
+    def packet_sniffer(cls, iface="wlan0", filter="", test=False):
         """This will actual sniff the network"""
 
 
@@ -88,15 +87,26 @@ class Network_Sniffer():
                       )
 
 
-        try:
-
-            # UPDATE PANEL LIVE
-            with Live(panel, console=console, refresh_per_second=4):
-
-
-                # START BACKGROUND THREAD
-                threading.Thread(target=update, args=(panel, ), daemon=True).start()
+        try: 
             
+            # SINGLE MODULE TEST
+            if test:
+
+                # UPDATE PANEL LIVE
+                with Live(panel, console=console, refresh_per_second=4):
+
+
+                    # START BACKGROUND THREAD
+                    
+                    threading.Thread(target=update, args=(panel, ), daemon=True).start()
+                
+
+                    # SNIFF TRAFFIC
+                    sniff(iface=iface, prn=Network_Sniffer.packet_parser, filter=filter, store=0)
+            
+            
+            # CALLED UPON
+            else:
 
                 # SNIFF TRAFFIC
                 sniff(iface=iface, prn=Network_Sniffer.packet_parser, filter=filter, store=0)
@@ -105,7 +115,7 @@ class Network_Sniffer():
         
         # DESTROY ERRORS
         except Exception as e:
-            console.print(f"\n[bold red]Exception Error:[bold yellow] {e}")
+            cls.CONSOLE.print(f"\n[bold red]Exception Error:[bold yellow] {e}")
     
 
     @classmethod
@@ -162,7 +172,7 @@ class Network_Sniffer():
                     port_dst = 0
 
                     # NOTIFY USER
-                    console.print(f"else triggered", style="bold red")
+                    cls.CONSOLE.print(f"else triggered", style="bold red")
                 
 
 
@@ -214,7 +224,7 @@ class Network_Sniffer():
         
         # IF VERBOSE
         if cls.verbose:
-            console.print(f"[bold red][+][/bold red] {proto} - {ip_src}:{port_src} --> {ip_dst}:{port_dst}  -  TTL: {pkt_ttl}  Len: {pkt_len}")
+            cls.CONSOLE.print(f"[bold red][+][/bold red] {proto} - {ip_src}:{port_src} --> {ip_dst}:{port_dst}  -  TTL: {pkt_ttl}  Len: {pkt_len}")
         
 
 
@@ -232,12 +242,13 @@ class Network_Sniffer():
     
 
     @classmethod
-    def main(cls):
+    def main(cls, iface=False,CONSOLE=console, get=False):
         """Class wide logic will be init from here"""
 
         
         # FOR DEBUGGING
         cls.verbose = True
+        cls.CONSOLE = CONSOLE
 
 
         # INIT CLASS VARS
@@ -248,7 +259,8 @@ class Network_Sniffer():
 
 
         # GET IFACE
-        iface = Network_Sniffer.get_interface()
+        if get:
+            iface = Utilities.get_interface()
 
 
         # START SNIFFING
@@ -258,5 +270,5 @@ class Network_Sniffer():
 
 if __name__ == "__main__":
 
-    Network_Sniffer.main()
+    Network_Sniffer.main(get=True)
     
