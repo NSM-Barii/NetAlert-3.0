@@ -188,6 +188,10 @@ class Network_Scanner():
                 if response and online==False:
 
 
+                    # TALK
+                   # Utilities.tts_custom(say=f"{target_ip} is now online")
+
+
                     # SET ONLINE
                     online = True
                     delay = 10
@@ -225,6 +229,9 @@ class Network_Scanner():
 
                     if online == False:
 
+                        # TALK
+                        Utilities.tts_google(say=f"{target_ip} is now offline")
+
 
 
                         if verbose:
@@ -260,8 +267,9 @@ class Network_Scanner():
             except Exception as e:
                 console.print(f"Exception Error: ")
     
-
-    @classmethod
+    
+    # THIS WILL NOT BE USED BEYOND TESTING // DONT TAKE SERIOUS
+    @classmethod 
     def node_changer(cls, node_online=0, node_offline=0):
         """This method will be responsible for updating node status to a json file"""
         

@@ -10,8 +10,11 @@ from rich.console import Console
 console = Console()
 
 # ETC IMPORTS
-import sqlite3
+import sqlite3, os
 from datetime import datetime
+
+# VOICE 
+from gtts import gTTS
 
 
 
@@ -84,7 +87,7 @@ class Utilities():
 
 
     @classmethod
-    def push_sql_db(cls, proto, ip_src, ip_dst, port_src, port_dst, pkt_ttl, pkt_len, verbose=True):
+    def push_sql_db(cls, proto, ip_src, ip_dst, port_src, port_dst, pkt_ttl, pkt_len, verbose=True, traffic_type=2):
         """This method will be used to push and pull info from the SQL DB"""
 
 
@@ -96,6 +99,14 @@ class Utilities():
         path = sql / "network_traffic_all.db"
 
 
+        # PATH 
+        if traffic_type == 1:
+            db = "network_traffic_all.db"
+
+        elif traffic_type == 2:
+            db = "network_traffic_anamolies.db"
+
+
 
         # GET TIMESTAMP
         time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
@@ -104,7 +115,7 @@ class Utilities():
 
 
         # CREATE DATABASE CONNECTION
-        with sqlite3.connect(f"network_traffic_all.db") as conn:
+        with sqlite3.connect(f"{db}") as conn:
 
 
             # TURN ON AUTO-COMMIT
@@ -153,5 +164,49 @@ class Utilities():
                 console.print(f"Successufully commited changes to SQL DB", style="bold green")
 
 
+    
+    @staticmethod
+    def tts_espeak(cls, say):
+        """This method will be responsible for speaking aloud text"""
+
+
+        say = str(say)
+
+        os.system(f"espeak -p 20 {say}")
+    
+
+
+    @staticmethod
+    def tts_google(say=False):
+        """This will use a new approach to speaking"""
+
+
+        try:
+            tts = gTTS(say, tld='com.au')
+            tts.save("output.mp3")
+            os.system("mpg123 output.mp3")
+        
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+    
+
+
+    @staticmethod
+    def tts_custom(say):
+        """This will use a apt install tool"""
+
+        import os
+
+        text = "ATTENTION. ATTENTION. ATTENTION. Theres has been a new device found on your network with the ip address of: 192.168.1.27. Now launching Reverse Attack"
+        os.system(f'edge-tts --voice en-US-GuyNeural --rate="+10%" --text "{say}" --write-media jewl.mp3 && mpg123 jewl.mp3')
+
+
+
+
+
+# STRICTLY FOR MODULAR TESTING
+if __name__ == "__main__":
+
+    Utilities.tts_google()
 
 

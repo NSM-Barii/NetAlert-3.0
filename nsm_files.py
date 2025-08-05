@@ -30,7 +30,6 @@ class File_Handling():
         pass
 
 
-    
     @classmethod
     def create_base_dir(cls, verbose=False):
         """This single method will be responsible soley for creating def path"""
@@ -65,7 +64,6 @@ class File_Handling():
             console.print("base_dir set", style="bold green")
             
 
-
     @classmethod
     def path_for_sql(cls, get=False):
         """This will be responsible for creating and handling file path for db """
@@ -90,7 +88,6 @@ class File_Handling():
 
             except Exception as e:
                 console.print(f"[bold red]Exception Error:[bold yellow] {e}")
-
 
 
     @classmethod
@@ -175,7 +172,6 @@ class File_Handling():
                 console.print(f"[bold red]Exception Error:[yellow] {e}")
 
                 break
-
 
 
     @classmethod
