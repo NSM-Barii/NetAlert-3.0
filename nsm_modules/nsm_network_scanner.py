@@ -169,6 +169,11 @@ class Network_Scanner():
 
 
 
+        # START THE RATE LIMITER
+        threading.Thread(target=Network_Scanner.rate_limiter, args=(target_ip, ), daemon=True).start()
+
+
+
         # CREATE PING 
         ping = IP(dst=target_ip) / ICMP()
         
@@ -268,8 +273,8 @@ class Network_Scanner():
                 console.print(f"Exception Error: ")
     
     
-    # THIS WILL NOT BE USED BEYOND TESTING // DONT TAKE SERIOUS
-    @classmethod 
+    
+    @classmethod # THIS WILL NOT BE USED BEYOND TESTING // DONT TAKE SERIOUS 
     def node_changer(cls, node_online=0, node_offline=0):
         """This method will be responsible for updating node status to a json file"""
         
@@ -284,6 +289,36 @@ class Network_Scanner():
         # PUSH JSON
         File_Handling.push_json(data=data, verbose=True)
 
+    
+
+    @classmethod
+    def rate_limiter(cls, target_ip, verbose=0, timeout=60, count=100):
+        """This method will be responsible for tracking/rate limiting a target"""
+
+
+        # LET THE USER KNOW
+        console.print(f"[bold red]Rate limiting[/bold red] --> {target_ip}", style="bold red")
+
+
+        # INFINITE LOOP
+        while cls.SNIFF:
+
+            # START TIME START
+            time_start = time.time()
+
+            sniff(filter=f"ip and host {target_ip}", store=0, count=count, timeout=timeout)
+
+            # GET END TIME
+            time_total = time.time() - time_start
+
+            if time_total > 60:
+
+
+                # WARN USER OF RATE TRIGGER
+                Utilities.flash_lights(action="alert", say=f"CODE RED,I Have found a rogue device with the ip of: {target_ip}. I will now begin to smack them off the internet!")
+
+                # PRINT
+                console.print("Succesfully warned the user")
 
 
     @classmethod
