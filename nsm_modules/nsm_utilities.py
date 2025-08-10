@@ -9,9 +9,15 @@ from rich.live import Live
 from rich.console import Console
 console = Console()
 
+
+# NETWORK IMPORTS
+import socket, requests
+
+
 # ETC IMPORTS
-import sqlite3, os, requests, threading, time
+import sqlite3, os, threading, time
 from datetime import datetime
+
 
 # VOICE 
 from gtts import gTTS
@@ -30,7 +36,7 @@ class Utilities():
 
     # CLASS VAR
     talk = True
-
+    UI = False
 
     def __init__(self):
         pass
@@ -274,15 +280,27 @@ class Utilities():
 
             if verbose:
                 console.print("Failed to flash lights", style="bold red")
+    
+
+
 
 
 
 # STRICTLY FOR MODULAR TESTING
 if __name__ == "__main__":
     
-   # Utilities().tts_def(letter="howdy. I am now ur slave")
-    Utilities.flash_lights(say="CODE RED,I Have found a rogue device with the ip of: 192.168.1.1. I will now begin to smack them off the internet!")
-   # Utilities.tts_custom(say="howdy, im ur slave")
-  #  Utilities.tts_google(say=f"CODE RED,I Have found a rogue device with the ip of: 192.168.1.1. I will now begin to smack them off the internet!")
+
+    # SET
+    use = 1
+
+
+    if use == 1:
+        Utilities.web_server()
+
+
+    elif use == 2:
+        console.print("running")
+        Utilities.flash_lights(say="CODE RED,I Have found a rogue device with the ip of: 192.168.1.1. I will now begin to smack them off the internet!")
+
 
 
