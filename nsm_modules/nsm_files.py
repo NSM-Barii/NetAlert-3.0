@@ -286,7 +286,7 @@ class Push_Network_Status():
 
 
     @classmethod
-    def get_json(cls, verbose=True):
+    def get_device_info(cls, verbose=True):
         """pull and return json file"""
 
         
@@ -304,16 +304,13 @@ class Push_Network_Status():
 
 
                 # MAKE SURE BASE EXIST
-                if cls.base_dir:
-
-               
-                    
-        
+                if cls.base_dir:                    
+    
         
                     # CREATE FILE
                     path = cls.base_dir / "nodes.json"
 
-                    # OPEN
+                    
                     with open(path, "r") as file:
                         data = json.load(file)
 
@@ -362,8 +359,44 @@ class Push_Network_Status():
         
 
     @classmethod
-    def push_device_info(cls, target_ip, target_mac, vendor, host):
+    def push_device_info(cls, target_ip, target_mac, host, vendor, status):
         """This method will be responsible for pushing device info """
 
 
-        # PUSH IP, MAC, VENDOR, HOST
+        # GET JSON
+        data = Push_Network_Status.get_device_info(verbose=True)
+
+
+        # EXAMPLE
+        """
+
+        DATA = {
+                "192.168.1.2" {
+
+                    "target_ip": "192.168.1.2"
+                    "target_mac": "01:A1:B2:C3:D4:F6",
+                    "host": "nsm-switch",
+                    "vendor": "NETGEAR",
+                    "status": offline
+                    
+                    }
+        
+        
+        """
+
+
+
+        # PUSH IP, MAC, HOST, VENDOR
+        data[target_ip] = {
+            "target_ip": target_ip,
+            "target_mac": target_mac,
+            "host": host,
+            "vendor": vendor,
+            "status": status
+        }
+
+
+
+        # PUSH RESULTS
+        Push_Network_Status.host
+
