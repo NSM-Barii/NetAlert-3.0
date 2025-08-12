@@ -352,14 +352,13 @@ class Push_Network_Status():
             except Exception as e:
                 console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
+                break
 
-        
-        # CREATE NODE FILE
-        console.print()
+
         
 
     @classmethod
-    def push_device_info(cls, target_ip, target_mac, host, vendor, status):
+    def push_device_info(cls, target_ip, target_mac, host, vendor, status, verbose=False):
         """This method will be responsible for pushing device info """
 
 
@@ -398,5 +397,67 @@ class Push_Network_Status():
 
 
         # PUSH RESULTS
-        Push_Network_Status.host
+        # CREATE BASE DIR
+        File_Handling.create_base_dir(verbose=True, get=True)
+
+        
+
+        # LOOP 4 ERROS
+        while True:
+
+
+            try:
+
+
+                # MAKE SURE BASE EXIST
+                if cls.base_dir:                    
+    
+        
+                    # CREATE FILE
+                    path = cls.base_dir / "nodes.json"
+
+                    
+                    with open(path, "w") as file:
+                        json.dump(data, file, indent=4)
+
+
+                    if verbose:
+                        console.print(f"\nSuccessfully updated nodes.json", style="bold green")
+                
+
+                # CREATE BASE DIR
+                else:
+
+                    cls.base_dir = File_Handling.create_base_dir(get=True)
+          
+                
+                
+            # CREATE FILE
+            except FileNotFoundError as e:
+                
+                if verbose:
+                    console.print(f"[bold red]File not found Error:[bold yellow] {e}")
+
+                
+                path = cls.base_dir / "nodes.json"
+
+                data = {}
+
+
+                with open(path, "w") as file:
+                    json.dump(data, file, indent=4)
+
+
+                    if verbose:
+                        console.print(f"File path successfully made", style="bold green")
+
+                
+        
+            
+            # GENERAL ERRORS
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+                break
+        
 
