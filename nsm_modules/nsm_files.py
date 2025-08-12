@@ -31,7 +31,7 @@ class File_Handling():
 
 
     @classmethod
-    def create_base_dir(cls, verbose=False):
+    def create_base_dir(cls, verbose=False, get=False):
         """This single method will be responsible soley for creating def path"""
 
         
@@ -41,6 +41,11 @@ class File_Handling():
             # FOR SUDO PATH
             USER_HOME = Path(os.getenv("SUDO_USER", "home") and f"/home/{os.getenv("SUDO_USER")}") or Path.home()
             cls.base_dir = USER_HOME / "Documents" / "nsm_tools" / ".data" / "netalert3"
+
+            
+            # RETURN FOR DIFERENT MODULES
+            if get:
+                return cls.base_dir
 
         
 
@@ -259,3 +264,106 @@ class File_Handling():
                 console.print(f"[bold red]Exception Error:[yellow] {e}")
                 
                 break
+
+
+
+
+# THIS MODULE FOR THE MOMENT IS THEORETICAL
+class Push_Network_Status():
+    """This class will be responsible for pushing backend results to the frontend"""
+
+
+
+
+    @classmethod
+    def create_base_dir(cls):
+        """This method will be responsible for creating base dir"""
+
+
+        # GET BASE DIR
+        cls.base_dir = File_Handling.create_base_dir(verbose=True, get=True)
+
+
+
+    @classmethod
+    def get_json(cls, verbose=True):
+        """pull and return json file"""
+
+        
+
+        # CREATE BASE DIR
+        File_Handling.create_base_dir(verbose=True, get=True)
+
+        
+
+        # LOOP 4 ERROS
+        while True:
+
+
+            try:
+
+
+                # MAKE SURE BASE EXIST
+                if cls.base_dir:
+
+               
+                    
+        
+        
+                    # CREATE FILE
+                    path = cls.base_dir / "nodes.json"
+
+                    # OPEN
+                    with open(path, "r") as file:
+                        data = json.load(file)
+
+
+                    # RETURN DATA
+                    return data
+                
+
+                # CREATE BASE DIR
+                else:
+
+                    cls.base_dir = File_Handling.create_base_dir(get=True)
+          
+                
+                
+            # CREATE FILE
+            except FileNotFoundError as e:
+                
+                if verbose:
+                    console.print(f"[bold red]File not found Error:[bold yellow] {e}")
+
+                
+                path = cls.base_dir / "nodes.json"
+
+                data = {}
+
+
+                with open(path, "w") as file:
+                    json.dump(data, file, indent=4)
+
+
+                    if verbose:
+                        console.print(f"File path successfully made", style="bold green")
+
+                
+        
+            
+            # GENERAL ERRORS
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
+        
+        # CREATE NODE FILE
+        console.print()
+        
+
+    @classmethod
+    def push_device_info(cls, target_ip, target_mac, vendor, host):
+        """This method will be responsible for pushing device info """
+
+
+        # PUSH IP, MAC, VENDOR, HOST
