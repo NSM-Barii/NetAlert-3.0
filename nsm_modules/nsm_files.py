@@ -37,36 +37,25 @@ class File_Handling():
         
         # TRY
         try:
-    
-            # FOR SUDO PATH
-            USER_HOME = Path(os.getenv("SUDO_USER", "home") and f"/home/{os.getenv("SUDO_USER")}") or Path.home()
+            USER_HOME = Path(os.getenv("SUDO_USER") and f"/home/{os.getenv('SUDO_USER')}") or Path.home()
             cls.base_dir = USER_HOME / "Documents" / "nsm_tools" / ".data" / "netalert3"
-
-            
-            # RETURN FOR DIFERENT MODULES
-            if get:
-                return cls.base_dir
-
-        
-
-        # DEF BACK
         except Exception as e:
-
-            if verbose:
-                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
-
-
-            # FALL BACK TO NON SUDO PATH
-            cls.base_dir = Path.home() / "Documents" / "nsm_tools" / ".data" / "netalert3" 
+            console.print(e)
+            
+            # SWITCH BACK TO PATH
+            cls.base_dir= Path.home() / "Documents" / "nsm_tools" / ".data" / "netalert3"
         
 
-        # CREATE BASE IN CASE
-        cls.base_dir.mkdir(exist_ok=True, parents=True)
+        # MAKE IT
+        cls.base_dir.mkdir(parents=True, exist_ok=True)
+            
+        # RETURN FOR DIFERENT MODULES
+        if get:
+            #console.print("returning", style="bold red")
+            
+            return cls.base_dir
 
-
-        # NOTIFY
-        if verbose:
-            console.print("base_dir set", style="bold green")
+        
             
 
     @classmethod
@@ -284,7 +273,6 @@ class Push_Network_Status():
         cls.base_dir = File_Handling.create_base_dir(verbose=True, get=True)
 
 
-
     @classmethod
     def get_device_info(cls, verbose=True):
         """pull and return json file"""
@@ -292,12 +280,13 @@ class Push_Network_Status():
         
 
         # CREATE BASE DIR
-        File_Handling.create_base_dir(verbose=True, get=True)
+        cls.base_dir = File_Handling.create_base_dir(verbose=True, get=True)
 
         
 
         # LOOP 4 ERROS
         while True:
+
 
 
             try:
@@ -313,6 +302,7 @@ class Push_Network_Status():
                     
                     with open(path, "r") as file:
                         data = json.load(file)
+                    
 
 
                     # RETURN DATA
@@ -323,6 +313,26 @@ class Push_Network_Status():
                 else:
 
                     cls.base_dir = File_Handling.create_base_dir(get=True)
+            
+
+            except (json.JSONDecodeError, FileExistsError) as e:
+
+                if verbose:
+                    console.print(e)
+                
+                                
+                path = cls.base_dir / "nodes.json"
+
+                data = {}
+
+
+                with open(path, "w") as file:
+                    json.dump(data, file, indent=4)
+
+
+                    if verbose:
+                        console.print(f"File path successfully made", style="bold green")
+
           
                 
                 
@@ -355,8 +365,6 @@ class Push_Network_Status():
                 break
 
 
-        
-
     @classmethod
     def push_device_info(cls, target_ip, target_mac, host, vendor, status, verbose=False):
         """This method will be responsible for pushing device info """
@@ -364,6 +372,7 @@ class Push_Network_Status():
 
         # GET JSON
         data = Push_Network_Status.get_device_info(verbose=True)
+        
 
 
         # EXAMPLE
@@ -423,6 +432,9 @@ class Push_Network_Status():
 
                     if verbose:
                         console.print(f"\nSuccessfully updated nodes.json", style="bold green")
+
+                    
+                    break
                 
 
                 # CREATE BASE DIR
@@ -456,7 +468,7 @@ class Push_Network_Status():
             
             # GENERAL ERRORS
             except Exception as e:
-                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                console.print(f"[bold red]push_device_info - Exception Error:[bold yellow] {e}")
 
                 break
         

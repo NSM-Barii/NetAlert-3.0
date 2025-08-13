@@ -1,0 +1,11 @@
+scapy
+manuf
+ipaddress
+requests
+rich
+pathlib
+pyfiglet
+pandas
+numpy
+gtts
+pyttsx3

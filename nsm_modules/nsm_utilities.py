@@ -11,7 +11,7 @@ console = Console()
 
 
 # NETWORK IMPORTS
-import socket, requests
+import socket, requests, manuf
 
 
 # ETC IMPORTS
@@ -28,6 +28,8 @@ import pyttsx3
 # NSM IMPORTS
 from nsm_files import File_Handling
 
+
+LOCK = threading.Lock()
 
 
 
@@ -93,7 +95,113 @@ class Utilities():
         # ERROR 
         except Exception as e:
             console.print(f"[bold red]Exception Error:[yello] {e}")
+    
 
+
+    @staticmethod
+    def get_host(target_ip, verbose=False):
+        """This method will be responsible for getting the target host"""
+        
+        try:
+            
+            # GET HOST
+            host = socket.gethostbyaddr(target_ip)
+
+            console.print(host)
+
+
+            # RETURN VALUE
+            return host
+        
+
+        except Exception as e:
+
+            if verbose:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+    
+    @staticmethod
+    def get_vendor(mac:str):
+        """This class will be responsible for getting the vendor"""
+
+        
+        # FOR DEBUGIGNG
+        verbose = False
+
+
+        # TRY API FIRST
+        url = f"https://api.macvendors.com/{mac}"
+        
+
+        try:
+            response = requests.get(url=url, timeout=3)
+
+            if response.status_code == 200:
+
+                if verbose:
+                    console.print(f"Successfully retrieved API Key: {response.text}")
+
+                
+                return response.text
+
+        
+        
+        # DESTROY ERRORS
+        except Exception as e:
+
+            if verbose:
+                console.print(f"[bold red]Exception Error:[yellow] {e}")
+
+            
+            
+            #response = vendors.lookup(mac=mac) if vendors.lookup(mac=mac) else None
+
+            response = manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
+ 
+ 
+    @classmethod
+    def flash_lights(cls, CONSOLE, say=False, server_ip="192.168.1.51", action="alert", verbose=False):
+        """This method will be responsible for flashing lights via web api to esp"""
+
+
+        # TALK TO
+        with LOCK:
+            if say and cls.talk:
+
+                # TURN IT OFF
+                cls.talk = False
+
+                # THREAD IT & CONTINUE
+                #threading.Thread(target=Utilities().tts_espeak, args=(say, ),daemon=True).start()
+                #time.sleep(2)
+
+                # TURN BACK ON
+                cls.talk = True
+            
+        
+
+        # FORM URL
+        try:
+
+            url = f"http://{server_ip}/{action}"
+            response = requests.post(url)
+
+            if response.status_code == 200:
+
+                if verbose:
+                    CONSOLE.print("Succesfully flashed light", style="bold green")
+            
+
+            else:
+
+                if verbose:
+                    CONSOLE.print("Failed to flash lights", style="bold red")
+        
+
+        except Exception as e:
+
+            if verbose:
+                CONSOLE.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
 
     @classmethod
@@ -174,7 +282,14 @@ class Utilities():
                 console.print(f"Successufully commited changes to SQL DB", style="bold green")
 
 
-    
+
+
+
+# GAVE TTS METHODS ITS OWN CLASS FOR CLEANER STORING
+class TTS():
+    """This class will be responsible for holding all TTS variations"""
+
+
     @staticmethod
     def tts_espeak(cls, say):
         """This method will be responsible for speaking aloud text"""
@@ -246,40 +361,7 @@ class Utilities():
 
 
 
-    @classmethod
-    def flash_lights(cls, say=False, server_ip="192.168.1.51", action="alert", verbose=False):
-        """This method will be responsible for flashing lights via web api to esp"""
-
-
-        # TALK TO
-        if say and cls.talk:
-
-            # TURN IT OFF
-            cls.talk = False
-
-            # THREAD IT & CONTINUE
-            threading.Thread(target=Utilities().tts_espeak, args=(say, ),daemon=True).start()
-            time.sleep(2)
-
-            # TURN BACK ON
-            cls.talk = True
-            
-        
-
-        # FORM URL
-        url = f"http://{server_ip}/{action}"
-        response = requests.post(url)
-
-        if response.status_code == 200:
-
-            if verbose:
-                console.print("Succesfully flashed light", style="bold green")
-        
-
-        else:
-
-            if verbose:
-                console.print("Failed to flash lights", style="bold red")
+   
     
 
 
