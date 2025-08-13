@@ -54,9 +54,15 @@ class Network_Scanner():
 
 
 
-        # START BACKGROUND ARP SCAN
+        # START ARP SCAN
         threading.Thread(target=Network_Scanner.subnet_scanner, args=(iface, ), daemon=True).start()
         console.print("[bold red][+][bold yellow] Thread 1 started")
+        
+
+
+        # START SUMMARY COUNT
+        threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
+        console.print("[bold red][+][bold yellow] Thread 2 started")
 
 
         # START BACKGROUND PACKET SNIFFER
@@ -101,9 +107,8 @@ class Network_Scanner():
             pass
 
 
-
     @classmethod
-    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=True):
+    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=False):
         """This will perform a ARP scan"""
 
 
@@ -145,7 +150,8 @@ class Network_Scanner():
                 
 
                     # ALERT THE USER
-                    console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}")
+                    if verbose:
+                        console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}")
 
 
                     # TRACK DEVICE CONNECTION STATUS
@@ -155,7 +161,8 @@ class Network_Scanner():
             
             # NOW WAIT UNTIL NEXT SCAN
             num += 1
-            console.print(f"Loop #{num}", style="bold red")
+            if verbose:
+                console.print(f"Loop #{num}", style="bold red")
             time.sleep(cls.scan_delay)
         
 
@@ -234,7 +241,7 @@ class Network_Scanner():
                         
                         )
 
-                
+            
 
                 # ALREADY ONLINE
                 elif response:
@@ -250,42 +257,37 @@ class Network_Scanner():
                 # NO RESPONSE // NOW OFFLINE
                 else:
 
-                    if online == False:
+
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
+
+                    
+
+                    # UPDATE CLS STATUS
+                    cls.nodes_offline += 1
+                    cls.nodes_online -= 1
+                    online = False
 
 
-                        if verbose:
-                            console.print(f"[{c1}][+][/{c1}] Node Offline: [{c3}]{target_ip} ")
-
+                    # PUSH STATUS
+                    Push_Network_Status.push_device_info(
                         
-
-                        # UPDATE CLS STATUS
-                        cls.nodes_offline += 1
-                        cls.nodes_online -= 1
-
-
-                        # PUSH STATUS
-                        Push_Network_Status.push_device_info(
-                            
-                            target_ip=target_ip,
-                            target_mac=target_mac,
-                            host=host,
-                            vendor=vendor,
-                            status="offline"
-                            
-                            )
+                        target_ip=target_ip,
+                        target_mac=target_mac,
+                        host=host,
+                        vendor=vendor,
+                        status="offline",
+                        verbose=False
+                        
+                        )
 
 
 
 
-                        # APPEND DELAY // REDUCE NETWORK TRAFFIC
-                        delay += 5 if delay < 20 else 0
+                    # APPEND DELAY // REDUCE NETWORK TRAFFIC
+                    delay += 5 if delay < 20 else 0
                     
                     
-                    # TRY ONE MORE PING BEFORE WE MAKE IT OFFLINE
-                    else:
-
-                        delay = 0
-                        online = False
                 
 
 
@@ -331,7 +333,7 @@ class Network_Scanner():
 
 
     @classmethod
-    def main(cls):
+    def main(cls, type="gui"):
         """This will be responsible for performing class wide logic"""
 
 
@@ -339,7 +341,6 @@ class Network_Scanner():
         cls.SNIFF = True
         cls.scan_delay = 20
         cls.subnet_devices = []
-
         cls.nodes_online = 0
         cls.nodes_offline = 0
 
@@ -348,11 +349,35 @@ class Network_Scanner():
 
         # GET IFACE
         iface = Utilities.get_interface()
-        
         time.sleep(1)
 
-        # PERFORM ARP SCAN
-        Network_Scanner.controller(iface=iface, target="192.168.1.0/24", test=True)
+
+        # USE THIS FOR CLI 
+        if type == "cli":
+            Network_Scanner.controller(iface=iface, target="192.168.1.0/24", test=True)
+
+
+        # USE THIS FOR GUI 
+        elif type == "gui":
+
+
+            # START ARP SCAN
+            threading.Thread(target=Network_Scanner.subnet_scanner, args=(iface, ), daemon=True).start()
+            console.print("[bold red][+][bold yellow] Thread 1 started")
+            
+
+            # START SUMMARY COUNT
+            threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
+            console.print("[bold red][+][bold yellow] Thread 2 started")
+            
+
+            # TELL
+            time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
+            console.print(f"GUI Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
+
+            while True:
+                pass
+
 
 
 
@@ -364,4 +389,4 @@ if __name__ == "__main__":
     
 
     if use:
-        Network_Scanner.main()
+        Network_Scanner.main(type="gui")

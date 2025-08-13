@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NetAlert 3.0 — Network Status</title>
+  <style>
+    :root{
+      --bg:#0b1220;          /* deep navy */
+      --panel:#0f172a;       /* slate-900 */
+      --ink:#e6edf3;         /* light text */
+      --muted:#9fb0c3;       /* slate-400 */
+      --accent:#22d3ee;      /* cyan-400 */
+      --accent-2:#818cf8;    /* indigo-400 */
+      --ok:#34d399;          /* green-400 */
+      --warn:#f59e0b;        /* amber-500 */
+      --bad:#ef4444;         /* red-500 */
+      --chip:#111b33;
+      --border:rgba(129,140,248,.25);
+      --shadow:0 10px 28px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:
+        radial-gradient(900px 400px at 100% -10%, rgba(34,211,238,.08), transparent 60%),
+        radial-gradient(800px 360px at -10% -10%, rgba(129,140,248,.10), transparent 55%),
+        var(--bg);
+      color:var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+    .container{max-width:1120px;margin:28px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    h1{margin:0;font-size:clamp(18px,3.2vw,28px);letter-spacing:.2px;color:var(--accent)}
+    nav .btn{appearance:none;border:1px solid var(--accent);background:linear-gradient(180deg,#111b33,#0a1226);color:var(--ink);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}
+    nav .btn:hover{box-shadow:0 0 0 3px rgba(34,211,238,.2) inset;border-color:var(--accent)}
+    .card{background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(13,20,38,.96));border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+    .toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto auto;gap:10px;align-items:center;padding:12px;border-bottom:1px solid var(--border)}
+    .in{width:100%;background:var(--chip);color:var(--ink);border:1px solid rgba(129,140,248,.35);border-radius:10px;padding:10px 12px;outline:none}
+    .in:focus{box-shadow:0 0 0 3px rgba(129,140,248,.25)}
+    label.small{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px}
+    .stat{background:var(--chip);border:1px solid rgba(129,140,248,.22);border-radius:10px;padding:12px}
+    .stat .k{font-size:22px;font-weight:800}
+    .stat .l{font-size:12px;color:var(--muted)}
+    .search{padding:0 12px 12px}
+    .tablewrap{overflow:auto;border-top:1px solid var(--border)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 14px;border-bottom:1px solid rgba(129,140,248,.18);font-size:14px}
+    th{text-align:left;color:var(--muted);position:sticky;top:0;background:rgba(15,23,42,.98);backdrop-filter:blur(4px)}
+    .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px;letter-spacing:.3px}
+    .online{background:rgba(52,211,153,.12);color:var(--ok);border:1px solid rgba(52,211,153,.35)}
+    .offline{background:rgba(239,68,68,.12);color:var(--bad);border:1px solid rgba(239,68,68,.35)}
+    .unknown{background:rgba(245,158,11,.12);color:var(--warn);border:1px solid rgba(245,158,11,.35)}
+    .dot{width:8px;height:8px;border-radius:999px;background:currentColor;box-shadow:0 0 14px currentColor}
+    .error{margin:10px 12px;color:#ffd4d4;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);padding:10px 12px;border-radius:10px;font-size:13px}
+    .hidden{display:none}
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-size:12px;padding:10px 12px}
+    .footer a{color:var(--accent-2);text-decoration:none}
+    .footer a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>NetAlert 3.0 — Network Status</h1>
+      <nav>
+        <a class="btn" href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">GitHub ↗</a>
+      </nav>
+    </header>
+
+    <section class="card">
+      <div class="toolbar">
+        <input id="jsonUrl" class="in" type="text" placeholder="/nodes.json" value="/nodes.json" aria-label="JSON URL" />
+        <button class="btn" id="loadBtn" title="Fetch JSON now">Load</button>
+        <label class="small"><input id="autoRefresh" type="checkbox" /> Auto‑refresh <small id="intervalLabel"></small></label>
+        <input id="intervalSec" class="in" type="number" min="2" step="1" value="5" title="Refresh interval (seconds)" />
+        <button class="btn" id="pickBtn" title="Load local file without a server">Load local…</button>
+        <button class="btn" id="demoBtn" title="Load sample data to test the UI">Sample data</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k" id="statOnline">–</div><div class="l">Online</div></div>
+        <div class="stat"><div class="k" id="statTotal">–</div><div class="l">Total</div></div>
+        <div class="stat"><div class="k" id="statUpPct">–</div><div class="l">Uptime %</div></div>
+      </div>
+
+      <div class="search"><input id="search" class="in" type="text" placeholder="Filter by IP, host, vendor, MAC…" /></div>
+
+      <div id="error" class="error hidden"></div>
+
+      <div class="tablewrap">
+        <table id="nodesTable">
+          <thead>
+            <tr>
+              <th>IP</th>
+              <th>Host</th>
+              <th>Vendor</th>
+              <th>MAC</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        <div id="lastUpdated">Last update: —</div>
+        <small>Developed by <strong>NSM Barii</strong> • <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">github.com/nsm-barii/netalert-3.0</a></small>
+      </div>
+
+      <input id="fileInput" type="file" accept="application/json,.json" style="display:none" />
+    </section>
+  </div>
+
+  <script>
+    // ===== Minimal, robust JS =====
+    const $ = (s) => document.querySelector(s);
+    const ui = {
+      url: $('#jsonUrl'), load: $('#loadBtn'), auto: $('#autoRefresh'), int: $('#intervalSec'), il: $('#intervalLabel'),
+      online: $('#statOnline'), total: $('#statTotal'), pct: $('#statUpPct'), tbody: $('#tbody'), err: $('#error'), upd: $('#lastUpdated'),
+      search: $('#search'), pick: $('#pickBtn'), file: $('#fileInput'), demo: $('#demoBtn')
+    };
+
+    const normStatus = (v) => {
+      if (v === true || v === 1) return 'online';
+      if (v === false || v === 0) return 'offline';
+      if (typeof v === 'string') {
+        const s = v.trim().toLowerCase();
+        if (['online','on','up','alive'].includes(s)) return 'online';
+        if (['offline','off','down','dead'].includes(s)) return 'offline';
+      }
+      return 'unknown';
+    };
+
+    function computeSummary(data){
+      try{
+        const nodes = data?.nodes || {};
+        const keys = Object.keys(nodes);
+        const total = data?.summary?.nodes_total ?? keys.length;
+        const online = data?.summary?.nodes_online ?? keys.filter(k => normStatus(nodes[k]?.status) === 'online').length;
+        const pct = total ? Math.round((online/total)*100) : 0;
+        return { total, online, pct };
+      }catch{ return { total:0, online:0, pct:0 }; }
+    }
+
+    function setSummary({total, online, pct}){
+      ui.total.textContent = total;
+      ui.online.textContent = online;
+      ui.pct.textContent = pct + '%';
+    }
+
+    function esc(x){ return String(x).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',''':'&#39;'}[m])); }
+
+    function badge(s){
+      const cls = s === 'online' ? 'online' : (s === 'offline' ? 'offline' : 'unknown');
+      const label = s[0].toUpperCase() + s.slice(1);
+      return `<span class="badge ${cls}"><span class="dot"></span>${label}</span>`;
+    }
+
+    function render(data){
+      const filt = ui.search.value.trim().toLowerCase();
+      const rows = Object.values(data?.nodes || {})
+        .map(n => ({
+          ip: n.target_ip || n.ip || '',
+          host: n.host || '',
+          vendor: n.vendor || '',
+          mac: n.target_mac || n.mac || '',
+          status: normStatus(n.status)
+        }))
+        .filter(n => !filt || Object.values(n).some(v => String(v).toLowerCase().includes(filt)))
+        .sort((a,b) => { const pr = s => s==='online'?0:s==='unknown'?1:2; const d = pr(a.status)-pr(b.status); return d!==0?d:String(a.ip).localeCompare(String(b.ip), undefined, { numeric:true }); })
+        .map(n => `<tr>
+          <td><code>${esc(n.ip)}</code></td>
+          <td>${esc(n.host)}</td>
+          <td>${esc(n.vendor)}</td>
+          <td><code>${esc(n.mac)}</code></td>
+          <td>${badge(n.status)}</td>
+        </tr>`).join('');
+      ui.tbody.innerHTML = rows || `<tr><td colspan="5" style="color:var(--muted);padding:20px;">No nodes to display.</td></tr>`;
+    }
+
+    function apply(data){
+      setSummary(computeSummary(data));
+      render(data);
+      ui.upd.textContent = 'Last update: ' + new Date().toLocaleString();
+      window.__na3 = data;
+    }
+
+    function showErr(msg){
+      ui.err.textContent = msg;
+      ui.err.classList.remove('hidden');
+      setTimeout(() => ui.err.classList.add('hidden'), 6000);
+    }
+
+    async function load(){
+      const url = ui.url.value.trim();
+      if(!url) return showErr('Enter a URL (e.g., /nodes.json)');
+      try{
+        const res = await fetch(url + (url.includes('?')?'&':'?') + '_ts=' + Date.now(), { cache:'no-store' });
+        if(!res.ok) throw new Error('HTTP ' + res.status + ' — ' + res.statusText);
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          apply(data);
+          localStorage.setItem('na3_url', url);
+        } catch(parseErr){
+          showErr('JSON parse error: ' + parseErr.message);
+        }
+      }catch(e){
+        showErr('Network/load error: ' + e.message + '. Ensure the file is served by your GUI server or use "Load local…".');
+      }
+    }
+
+    // Auto-refresh
+    let timer = null;
+    function syncTimer(){
+      const s = Math.max(2, parseInt(ui.int.value || '5', 10));
+      ui.int.value = String(s);
+      ui.il.textContent = ui.auto.checked ? `every ${s}s` : '';
+      if(timer){ clearInterval(timer); timer = null; }
+      if(ui.auto.checked){ timer = setInterval(load, s * 1000); }
+    }
+
+    // Local file loader (no server)
+    function loadFromFile(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{ const data = JSON.parse(reader.result); apply(data); }
+        catch(e){ showErr('Invalid JSON: ' + e.message); }
+      };
+      reader.readAsText(file);
+    }
+
+    // Demo/sample data
+    function sampleData(){
+      const data = {
+        "summary": { "nodes_online": 3, "nodes_total": 5 },
+        "nodes": {
+          "192.168.1.2": { "target_ip":"192.168.1.2","target_mac":"00:11:22:33:44:55","host":"nsm-switch","vendor":"NETGEAR","status":"online" },
+          "192.168.1.5": { "target_ip":"192.168.1.5","target_mac":"aa:bb:cc:dd:ee:ff","host":"workstation-01","vendor":"Dell","status":"offline" },
+          "192.168.1.8": { "target_ip":"192.168.1.8","target_mac":"de:ad:be:ef:01:23","host":"raspi","vendor":"Raspberry Pi","status":true },
+          "192.168.1.9": { "target_ip":"192.168.1.9","target_mac":"c0:ff:ee:c0:ff:ee","host":"cam-front","vendor":"Hikvision","status":"unknown" },
+          "192.168.1.21":{ "target_ip":"192.168.1.21","target_mac":"12:34:56:78:9a:bc","host":"ap-living","vendor":"Ubiquiti","status":0 }
+        }
+      };
+      apply(data);
+    }
+
+    // Events
+    ui.load.addEventListener('click', load);
+    ui.search.addEventListener('input', () => { if(window.__na3) render(window.__na3); });
+    ui.auto.addEventListener('change', syncTimer);
+    ui.int.addEventListener('change', syncTimer);
+    ui.pick.addEventListener('click', () => ui.file.click());
+    ui.file.addEventListener('change', (e) => { const f = e.target.files?.[0]; if(f) loadFromFile(f); });
+    ui.demo.addEventListener('click', sampleData);
+
+    // Init
+    (function init(){ const saved = localStorage.getItem('na3_url'); if(saved) ui.url.value = saved; syncTimer(); })();
+  </script>
+</body>
+</html>

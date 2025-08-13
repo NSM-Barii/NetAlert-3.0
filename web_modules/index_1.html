@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+
+  <!-- IM NOT A FRONT END CODER!!! -->
+  <!-- THIS HTML FILE AND THIS FILE ALONE WAS CREATED WITH AI -->
+
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NetAlert-3.0 Monitor</title>
+  <!-- Tailwind via CDN for fast, no-build styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="color-scheme" content="dark light" />
+  <style>
+    :root { color-scheme: dark; }
+    .status-pill { @apply inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium; }
+    .pill-online { @apply bg-green-500/15 text-green-400 ring-1 ring-green-500/30; }
+    .pill-offline { @apply bg-zinc-500/15 text-zinc-300 ring-1 ring-zinc-500/30; }
+    .pill-rogue { @apply bg-red-500/15 text-red-400 ring-1 ring-red-500/30; }
+    .badge { @apply inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset; }
+    .card { @apply bg-zinc-900/60 border border-zinc-800 rounded-2xl shadow-sm; }
+    .muted { @apply text-zinc-400; }
+    .scroll-smooth { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="bg-black text-zinc-100 min-h-screen">
+  <!-- CONFIG -->
+  <script>
+    // ================== CONFIG ==================
+    // If your API is same-origin, leave as ''.
+    // Otherwise set to 'http://localhost:8000' or whatever your FastAPI/Flask base is.
+    const API_BASE = '';
+    // Polling interval (ms) when not using SSE
+    const POLL_MS = 5000;
+    // Max events kept in feed
+    const MAX_EVENTS = 200;
+    // ===========================================
+  </script>
+
+  <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-black/40">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 ring-2 ring-blue-500/40"></div>
+        <h1 class="text-lg sm:text-xl font-semibold tracking-tight">NetAlert-3.0 — Monitor</h1>
+      </div>
+      <div id="connStatus" class="text-xs badge ring-blue-400/30 text-blue-300 bg-blue-400/10 px-2 py-1">Connecting…</div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <!-- Top stats -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card p-4">
+        <p class="muted text-xs">Online now</p>
+        <p id="onlineCount" class="text-3xl font-semibold mt-1">0</p>
+      </div>
+      <div class="card p-4">
+        <p class="muted text-xs">Known devices</p>
+        <p id="totalCount" class="text-3xl font-semibold mt-1">0</p>
+      </div>
+      <div class="card p-4">
+        <p class="muted text-xs">Last event</p>
+        <p id="lastEvent" class="text-base mt-1">—</p>
+      </div>
+      <div class="card p-4">
+        <p class="muted text-xs">Mode</p>
+        <p id="mode" class="text-base mt-1">Detecting…</p>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="card p-4">
+      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div class="flex gap-3 items-center w-full md:w-auto">
+          <input id="search" type="text" placeholder="Search IP / MAC / vendor…" class="w-full md:w-80 rounded-xl bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <select id="statusFilter" class="rounded-xl bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="all">All</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input id="soundToggle" type="checkbox" class="h-4 w-4 rounded border-zinc-700 bg-zinc-900" />
+            Play sound on new device
+          </label>
+          <button id="refreshBtn" class="rounded-xl bg-zinc-100/10 hover:bg-zinc-100/15 border border-zinc-800 px-3 py-2 text-sm">Refresh</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Devices table -->
+    <section class="card">
+      <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <h2 class="text-sm font-semibold">Devices</h2>
+        <span id="deviceCountLabel" class="muted text-xs">0 shown</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-zinc-900/60 text-zinc-300">
+            <tr>
+              <th class="text-left font-medium px-4 py-2">IP</th>
+              <th class="text-left font-medium px-4 py-2">MAC</th>
+              <th class="text-left font-medium px-4 py-2">Vendor</th>
+              <th class="text-left font-medium px-4 py-2">Status</th>
+              <th class="text-left font-medium px-4 py-2">First seen</th>
+              <th class="text-left font-medium px-4 py-2">Last seen</th>
+            </tr>
+          </thead>
+          <tbody id="deviceTbody" class="divide-y divide-zinc-800"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Event feed -->
+    <section class="card">
+      <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <h2 class="text-sm font-semibold">Event feed</h2>
+        <button id="scrollToTop" class="text-xs muted hover:text-zinc-200">Scroll to top</button>
+      </div>
+      <ol id="eventFeed" class="max-h-[40vh] overflow-y-auto scroll-smooth divide-y divide-zinc-800">
+        <!-- events injected here -->
+      </ol>
+    </section>
+
+    <footer class="py-8 text-center text-xs text-zinc-500">
+      Built lean for Bari · NetAlert-3.0 · Single-file GUI · No build tools
+    </footer>
+  </main>
+
+  <script>
+    'use strict';
+
+    // ------- Helpers -------
+    const API = {
+      summary: () => `${API_BASE}/api/summary`,
+      devices: () => `${API_BASE}/api/devices`,
+      events: (limit=100) => `${API_BASE}/api/events?limit=${limit}`,
+      stream: () => `${API_BASE}/api/events/stream`,
+    };
+
+    const fmt = new Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'medium' });
+    const byLastSeenDesc = (a, b) => new Date(b.last_seen || 0) - new Date(a.last_seen || 0);
+
+    const el = id => document.getElementById(id);
+
+    function pill(status) {
+      const s = String(status || '').toLowerCase();
+      const base = 'status-pill';
+      if (s === 'online') return `<span class="${base} pill-online"><span class="h-2 w-2 rounded-full bg-green-400 inline-block"></span>Online</span>`;
+      if (s === 'rogue')  return `<span class="${base} pill-rogue"><span class="h-2 w-2 rounded-full bg-red-400 inline-block"></span>Rogue</span>`;
+      return `<span class="${base} pill-offline"><span class="h-2 w-2 rounded-full bg-zinc-300 inline-block"></span>Offline</span>`;
+    }
+
+    function safe(s) { return (s ?? '').toString(); }
+
+    function fmtTime(t) {
+      if (!t) return '—';
+      try { return fmt.format(new Date(t)); } catch { return safe(t); }
+    }
+
+    function beep() {
+      if (!soundEnabled) return;
+      try {
+        if (!window.__ac) window.__ac = new (window.AudioContext || window.webkitAudioContext)();
+        const ac = window.__ac;
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'square';
+        o.frequency.value = 880; // A5
+        g.gain.value = 0.03;
+        o.connect(g).connect(ac.destination);
+        const now = ac.currentTime;
+        o.start(now);
+        o.stop(now + 0.12);
+      } catch {}
+    }
+
+    // ------- State -------
+    let devices = [];
+    let events = [];
+    let soundEnabled = false;
+    let useSSE = false;
+    let pollTimer = null;
+    let es = null; // EventSource
+
+    // ------- UI bindings -------
+    el('soundToggle').addEventListener('change', (e) => {
+      soundEnabled = e.target.checked;
+      // Kickstart AudioContext on first user interaction for autoplay policies
+      if (soundEnabled) beep();
+    });
+
+    el('refreshBtn').addEventListener('click', () => {
+      refreshAll();
+    });
+
+    el('search').addEventListener('input', renderDevices);
+    el('statusFilter').addEventListener('change', renderDevices);
+    el('scrollToTop').addEventListener('click', () => el('eventFeed').scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // ------- Data fetchers -------
+    async function fetchJSON(url, opts) {
+      const r = await fetch(url, { cache: 'no-cache', ...opts });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return await r.json();
+    }
+
+    async function loadSummary() {
+      try {
+        const s = await fetchJSON(API.summary());
+        el('onlineCount').textContent = s.online_count ?? 0;
+        el('totalCount').textContent = s.total_count ?? 0;
+        el('lastEvent').textContent = fmtTime(s.last_event);
+      } catch (e) {
+        // best-effort only; show connection hint in header
+      }
+    }
+
+    async function loadDevices() {
+      try {
+        const list = await fetchJSON(API.devices());
+        devices = Array.isArray(list) ? list : (list.devices || []);
+        devices.sort(byLastSeenDesc);
+        renderDevices();
+      } catch (e) {
+        // swallow; UI will show last-known state
+      }
+    }
+
+    async function loadEvents(initLimit=50) {
+      try {
+        const list = await fetchJSON(API.events(initLimit));
+        events = Array.isArray(list) ? list : (list.events || []);
+        // Sort ascending by ts so newest goes to bottom then we render reversed
+        events.sort((a,b) => new Date(a.ts||0) - new Date(b.ts||0));
+        renderEvents();
+      } catch (e) {}
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        loadSummary();
+        loadDevices();
+        // do not reload whole event history every tick
+      }, POLL_MS);
+      useSSE = false;
+      el('connStatus').textContent = `Polling every ${Math.round(POLL_MS/1000)}s`;
+      el('connStatus').className = 'text-xs badge ring-amber-400/30 text-amber-300 bg-amber-400/10 px-2 py-1';
+      el('mode').textContent = 'Polling';
+    }
+
+    function startSSE() {
+      if (es) { try { es.close(); } catch {} es = null; }
+      try {
+        es = new EventSource(API.stream());
+      } catch (e) {
+        startPolling();
+        return;
+      }
+
+      let retryMs = 1000;
+
+      es.onopen = () => {
+        useSSE = true;
+        el('connStatus').textContent = 'Live (SSE)';
+        el('connStatus').className = 'text-xs badge ring-emerald-400/30 text-emerald-300 bg-emerald-400/10 px-2 py-1';
+        el('mode').textContent = 'Live (SSE)';
+      };
+
+      es.onmessage = (ev) => {
+        // Expect JSON event: { ts, type: 'online'|'offline'|'rogue', ip, mac, vendor }
+        try {
+          const evt = JSON.parse(ev.data);
+          handleEvent(evt);
+        } catch {}
+      };
+
+      es.onerror = () => {
+        // Switch to polling and try to reconnect with backoff
+        startPolling();
+        try { es.close(); } catch {}
+        es = null;
+        setTimeout(() => startSSE(), Math.min(retryMs *= 2, 30000));
+      };
+    }
+
+    function handleEvent(evt) {
+      if (!evt || !evt.ts) evt.ts = new Date().toISOString();
+      events.push(evt);
+      if (events.length > MAX_EVENTS) events.shift();
+      renderEvents(true);
+
+      // Update summary counters optimistically
+      if (evt.type === 'online') {
+        el('onlineCount').textContent = (Number(el('onlineCount').textContent)||0) + 1;
+        beep();
+      } else if (evt.type === 'offline') {
+        el('onlineCount').textContent = Math.max(0, (Number(el('onlineCount').textContent)||0) - 1);
+      }
+      el('lastEvent').textContent = fmtTime(evt.ts);
+
+      // Update devices list in memory
+      let d = devices.find(x => (x.mac && evt.mac && x.mac.toLowerCase()===evt.mac.toLowerCase()) || (x.ip && evt.ip && x.ip===evt.ip));
+      if (!d) {
+        d = { ip: evt.ip, mac: evt.mac, vendor: evt.vendor, first_seen: evt.ts, last_seen: evt.ts, status: evt.type==='offline' ? 'offline' : 'online' };
+        devices.push(d);
+      } else {
+        d.status = (evt.type==='offline') ? 'offline' : (evt.type==='rogue' ? 'rogue' : 'online');
+        d.last_seen = evt.ts;
+        if (!d.first_seen) d.first_seen = evt.ts;
+        if (!d.vendor && evt.vendor) d.vendor = evt.vendor;
+      }
+      devices.sort(byLastSeenDesc);
+      renderDevices();
+    }
+
+    // ------- Renderers -------
+    function renderDevices() {
+      const q = el('search').value.trim().toLowerCase();
+      const sf = el('statusFilter').value;
+      const rows = [];
+      let shown = 0;
+      for (const d of devices) {
+        if (sf !== 'all' && String(d.status).toLowerCase() !== sf) continue;
+        const hay = `${d.ip||''} ${d.mac||''} ${(d.vendor||'')}`.toLowerCase();
+        if (q && !hay.includes(q)) continue;
+        shown++;
+        rows.push(`
+          <tr class="hover:bg-zinc-900/50">
+            <td class="px-4 py-2 font-medium">${safe(d.ip)}</td>
+            <td class="px-4 py-2">${safe(d.mac)}</td>
+            <td class="px-4 py-2 text-zinc-300">${safe(d.vendor)}</td>
+            <td class="px-4 py-2">${pill(d.status)}</td>
+            <td class="px-4 py-2 text-zinc-300">${fmtTime(d.first_seen)}</td>
+            <td class="px-4 py-2 text-zinc-300">${fmtTime(d.last_seen)}</td>
+          </tr>`);
+      }
+      el('deviceTbody').innerHTML = rows.join('');
+      el('deviceCountLabel').textContent = `${shown} shown`;
+    }
+
+    function renderEvents(scrollToBottom=false) {
+      const feed = el('eventFeed');
+      const items = [...events].reverse().map(e => {
+        const type = (e.type||'').toLowerCase();
+        const color = type==='online' ? 'text-emerald-300' : (type==='offline' ? 'text-zinc-300' : 'text-red-300');
+        const dot = type==='online' ? 'bg-emerald-400' : (type==='offline' ? 'bg-zinc-300' : 'bg-red-400');
+        const label = type.charAt(0).toUpperCase() + type.slice(1);
+        return `
+          <li class="px-4 py-3 flex items-start gap-3">
+            <span class="mt-1 h-2.5 w-2.5 rounded-full ${dot} inline-block"></span>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-x-3">
+                <span class="text-xs ${color} badge ring-white/10 bg-white/5">${label}</span>
+                <span class="text-sm font-medium">${safe(e.ip||'')}</span>
+                <span class="muted text-xs">${safe(e.mac||'')}</span>
+                <span class="muted text-xs">${safe(e.vendor||'')}</span>
+              </div>
+              <div class="muted text-xs mt-1">${fmtTime(e.ts)}</div>
+            </div>
+          </li>`;
+      });
+      feed.innerHTML = items.join('');
+      if (scrollToBottom) feed.scrollTop = feed.scrollHeight;
+    }
+
+    // ------- Boot -------
+    async function refreshAll() {
+      await Promise.all([loadSummary(), loadDevices()]);
+    }
+
+    (async function init() {
+      // initial data
+      await Promise.all([loadSummary(), loadDevices(), loadEvents(30)]);
+      // try SSE first, fallback to polling
+      startSSE();
+      // keep a slow refresh of events list (history) every 60s in case SSE misses anything
+      setInterval(() => loadEvents(30), 60000);
+    })();
+  </script>
+</body>
+</html>

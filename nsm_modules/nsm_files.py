@@ -12,7 +12,7 @@ console = Console()
 
 
 # ETC IMPORTS
-import os
+import os, time, threading
 from datetime import datetime
 
 
@@ -20,6 +20,13 @@ from datetime import datetime
 from pathlib import Path
 import json
 
+
+# SAFE FILE HANLDING
+LOCK = threading.Lock()
+
+
+# USE THIS TO FIX PREMISSION ERRORS
+# sudo chown -R "$USER:$USER" ../../.data/netalert3/nodes.json
 
 
 class File_Handling():
@@ -315,7 +322,7 @@ class Push_Network_Status():
                     cls.base_dir = File_Handling.create_base_dir(get=True)
             
 
-            except (json.JSONDecodeError, FileExistsError) as e:
+            except (json.JSONDecodeError, FileExistsError, FileNotFoundError) as e:
 
                 if verbose:
                     console.print(e)
@@ -323,29 +330,10 @@ class Push_Network_Status():
                                 
                 path = cls.base_dir / "nodes.json"
 
-                data = {}
-
-
-                with open(path, "w") as file:
-                    json.dump(data, file, indent=4)
-
-
-                    if verbose:
-                        console.print(f"File path successfully made", style="bold green")
-
-          
-                
-                
-            # CREATE FILE
-            except FileNotFoundError as e:
-                
-                if verbose:
-                    console.print(f"[bold red]File not found Error:[bold yellow] {e}")
-
-                
-                path = cls.base_dir / "nodes.json"
-
-                data = {}
+                data = {
+                    "summary": {},  
+                    "nodes": {}
+                }
 
 
                 with open(path, "w") as file:
@@ -356,7 +344,6 @@ class Push_Network_Status():
                         console.print(f"File path successfully made", style="bold green")
 
                 
-        
             
             # GENERAL ERRORS
             except Exception as e:
@@ -366,12 +353,13 @@ class Push_Network_Status():
 
 
     @classmethod
-    def push_device_info(cls, target_ip, target_mac, host, vendor, status, verbose=False):
+    def push_device_info(cls, summary=False, target_ip=False, target_mac=False, host=False, vendor=False, status=False, verbose=False):
         """This method will be responsible for pushing device info """
 
 
         # GET JSON
         data = Push_Network_Status.get_device_info(verbose=True)
+        #console.print(data)
         
 
 
@@ -379,33 +367,45 @@ class Push_Network_Status():
         """
 
         DATA = {
-                "192.168.1.2" {
+                "summary": {
+                    "nodes_online": 12,
+                    "nodes_total": 20
+                },
+                "nodes"{
+                    "192.168.1.2" {
 
-                    "target_ip": "192.168.1.2"
-                    "target_mac": "01:A1:B2:C3:D4:F6",
-                    "host": "nsm-switch",
-                    "vendor": "NETGEAR",
-                    "status": offline
-                    
-                    }
+                        "target_ip": "192.168.1.2",
+                        "target_mac": "01:A1:B2:C3:D4:F6",
+                        "host": "nsm-switch",
+                        "vendor": "NETGEAR",
+                        "status": offline
+                        
+                        }
+                }
         
         
         """
 
+        # REMOVE PREVIOUS INSTANCE
 
 
+        
         # PUSH IP, MAC, HOST, VENDOR
-        data[target_ip] = {
-            "target_ip": target_ip,
-            "target_mac": target_mac,
-            "host": host,
-            "vendor": vendor,
-            "status": status
-        }
+        if summary == False:
+            data["nodes"][target_ip] = {
+                    "target_ip": target_ip,
+                    "target_mac": target_mac,
+                    "host": host,
+                    "vendor": vendor,
+                    "status": status
+                }
+        
+        # PUSH SUMMARY
+        else:
+            data["summary"] = summary 
 
 
 
-        # PUSH RESULTS
         # CREATE BASE DIR
         File_Handling.create_base_dir(verbose=True, get=True)
 
@@ -425,7 +425,6 @@ class Push_Network_Status():
                     # CREATE FILE
                     path = cls.base_dir / "nodes.json"
 
-                    
                     with open(path, "w") as file:
                         json.dump(data, file, indent=4)
 
@@ -441,11 +440,20 @@ class Push_Network_Status():
                 else:
 
                     cls.base_dir = File_Handling.create_base_dir(get=True)
-          
+            
+
+            # QUICK FIX
+            except (KeyError, TypeError) as e:
+
+                if verbose:
+                    console.print(e)
+                
+                data["summary"] = {}
+                data["nodes"] = {}
                 
                 
             # CREATE FILE
-            except FileNotFoundError as e:
+            except (json.JSONDecodeError, FileExistsError, FileNotFoundError) as e:
                 
                 if verbose:
                     console.print(f"[bold red]File not found Error:[bold yellow] {e}")
@@ -453,7 +461,12 @@ class Push_Network_Status():
                 
                 path = cls.base_dir / "nodes.json"
 
-                data = {}
+
+                data = {
+                    "summary": {},  
+                    "nodes": {}
+                }
+
 
 
                 with open(path, "w") as file:
@@ -473,3 +486,72 @@ class Push_Network_Status():
                 break
         
 
+    
+    @classmethod
+    def get_network_summary(cls, delay=5, verbose=False):
+        """This method will be responsible for updating the total amount of devices found and online"""
+
+        
+        # VARS
+        cls.nodes_online = 0
+        cls.nodes_count = 0
+        cls.nodes = []
+
+        
+        # LOOP INDEFIENTLY
+        while True:
+
+            # RESET
+            cls.nodes_online = 0
+
+
+            # PULL DATA
+            data = Push_Network_Status.get_device_info(verbose=True)
+            
+
+            # ITER
+            for key, value in data["nodes"].items():
+
+                
+                if verbose:
+                    console.print(value["target_ip"]," --> ", value["status"])
+
+                # GET VARS
+                status = value["status"]
+                target_ip = value["target_ip"]
+
+
+                if status == "online":
+                    cls.nodes_online += 1
+                
+                
+                
+                # APPEND TOTAL COUNT
+                if target_ip not in cls.nodes:
+
+                    # APPEND
+                    cls.nodes.append(target_ip)
+
+                    # ADD
+                    cls.nodes_count += 1
+            
+            
+            # SUMMARY
+            summary = {
+                "nodes_online": cls.nodes_online,
+                "nodes_total": cls.nodes_count
+            }
+            
+
+            # PUSH DATA
+            Push_Network_Status.push_device_info(summary=summary)
+            
+            # DELAY
+            time.sleep(delay)
+
+
+
+
+# FOR MODULE TESTING
+if __name__ == "__main__":
+    Push_Network_Status.get_node_count()

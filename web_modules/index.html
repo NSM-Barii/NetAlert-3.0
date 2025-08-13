@@ -1,385 +1,391 @@
 <!doctype html>
 <html lang="en">
-
-  <!-- IM NOT A FRONT END CODER!!! -->
-  <!-- THIS HTML FILE AND THIS FILE ALONE WAS CREATED WITH AI -->
-
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NetAlert-3.0 Monitor</title>
-  <!-- Tailwind via CDN for fast, no-build styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="color-scheme" content="dark light" />
-  <style>
-    :root { color-scheme: dark; }
-    .status-pill { @apply inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium; }
-    .pill-online { @apply bg-green-500/15 text-green-400 ring-1 ring-green-500/30; }
-    .pill-offline { @apply bg-zinc-500/15 text-zinc-300 ring-1 ring-zinc-500/30; }
-    .pill-rogue { @apply bg-red-500/15 text-red-400 ring-1 ring-red-500/30; }
-    .badge { @apply inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset; }
-    .card { @apply bg-zinc-900/60 border border-zinc-800 rounded-2xl shadow-sm; }
-    .muted { @apply text-zinc-400; }
-    .scroll-smooth { scroll-behavior: smooth; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NetAlert 3.0 — Nodes Dashboard</title>
+<style>
+  :root{
+    --bg:#06030a;             /* deep black-purple */
+    --grid:#1a1030;           /* background grid lines */
+    --panel:#0b0614;          /* card/panel */
+    --line:#2e1f4d;           /* borders */
+    --fg:#eae4ff;             /* primary text */
+    --muted:#a899c6;          /* secondary text */
+    --accent:#9b5cff;         /* neon purple */
+    --accent2:#43ffd8;        /* cyan highlight */
+    --on:#57ffb0;             /* online green-cyan */
+    --off:#ff7691;            /* offline pink */
+    --row:#0f0a1a;            /* table row */
+    --rowHover:#140e24;       /* table row hover */
+    --tooltip:#100a1e;        /* tooltip bg */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    color:var(--fg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: radial-gradient(1000px 600px at 15% -10%, #0d0720, var(--bg) 60%);
+    overflow-x:hidden;
+  }
+
+  /* Subtle animated grid background */
+  .bg-grid{
+    position:fixed; inset:0; z-index:-1;
+    background-image:
+      linear-gradient(transparent 31px, rgba(155,92,255,0.06) 32px),
+      linear-gradient(90deg, transparent 31px, rgba(155,92,255,0.06) 32px);
+    background-size:32px 32px, 32px 32px;
+    opacity:.35;
+    animation:gridMove 30s linear infinite;
+  }
+  @keyframes gridMove{
+    0%{ transform: translate3d(0,0,0) }
+    100%{ transform: translate3d(-32px,-32px,0) }
+  }
+
+  .wrap{max-width:1024px; margin:28px auto; padding:0 14px}
+
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  h1{
+    margin:0; font-size:26px; letter-spacing:.3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 18px rgba(155,92,255,.25);
+  }
+  .gh-btn a{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 14px; border:1px solid var(--line);
+    border-radius:10px; color:var(--fg); text-decoration:none; background:linear-gradient(180deg,#0e0820,#0a0618);
+    box-shadow:0 0 0 1px rgba(155,92,255,.25) inset, 0 0 14px rgba(67,255,216,.08);
+  }
+  .gh-btn a:hover{ box-shadow:0 0 0 1px rgba(67,255,216,.35) inset, 0 0 18px rgba(155,92,255,.2) }
+
+  .panel{
+    border:1px solid var(--line); border-radius:14px; padding:12px;
+    background: linear-gradient(180deg, rgba(22,14,40,.7), rgba(12,6,20,.7));
+    backdrop-filter: blur(3px);
+    box-shadow: 0 0 22px rgba(155,92,255,.08), inset 0 0 24px rgba(67,255,216,.04);
+  }
+
+  /* Controls */
+  .top-row{
+    display:grid; gap:10px;
+    grid-template-columns: 1fr auto auto auto auto;
+    align-items:center; margin-bottom:12px;
+  }
+  input[type="text"], input[type="number"]{
+    width:100%; background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px;
+    outline:none; box-shadow:0 0 0 0 rgba(155,92,255,.0); transition: box-shadow .2s, border-color .2s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus{
+    border-color:#5f3bb5; box-shadow:0 0 0 3px rgba(155,92,255,.12);
+  }
+  input[type="number"]{ width:84px; text-align:center }
+  button{
+    background:linear-gradient(180deg,#140a28,#0f0820); color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px; cursor:pointer;
+    transition: border-color .2s, transform .05s;
+  }
+  button:hover{ border-color:#6a44cc }
+  button:active{ transform: translateY(1px) }
+  label.small{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+
+  /* Cards */
+  .cards{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;
+  }
+  .card{
+    border:1px dashed #3a2866; border-radius:12px; padding:12px;
+    background: radial-gradient(140px 45px at 10% 0, rgba(155,92,255,.12), transparent 60%), #110922;
+  }
+  .card .label{color:var(--muted); font-size:12px; margin-bottom:2px}
+  .card .val{font-size:22px; letter-spacing:.3px; color:#d9c9ff}
+
+  /* Filters */
+  .filters{display:flex; gap:10px; align-items:center; margin-bottom:10px}
+  .filters select{ background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px; }
+
+  /* Table */
+  .grid{ border:1px solid var(--line); border-radius:12px; overflow: hidden; }
+  table{
+    width:100%; border-collapse:separate; border-spacing:0; background:#120a22; table-layout:auto;
+  }
+  th,td{
+    padding:11px 14px; border-bottom:1px solid #2b1d4d; white-space:nowrap; font-size:14px; text-align:left;
+  }
+  th{
+    color:#d9c9ff; background:linear-gradient(180deg,#180c33,#120a24); position:sticky; top:0; z-index:2; font-weight:600;
+    box-shadow: 0 3px 0 0 rgba(0,0,0,.15);
+  }
+  td{ font-weight:500; background:var(--row) }
+  tr:hover td{ background:var(--rowHover) }
+
+  /* Status pill + dot */
+  .status{ display:inline-flex; align-items:center; gap:10px; padding:4px 12px; border-radius:999px; border:1px solid;
+           font-size:12px; text-transform:capitalize; }
+  .on{ color:var(--on); border-color:#1c503f; background:#0b1a15 }
+  .off{ color:var(--off); border-color:#512a34; background:#1a0d12 }
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.on{background:var(--on); box-shadow:0 0 10px var(--on), 0 0 18px rgba(87,255,176,.25); animation:pulse 1.8s ease-in-out infinite}
+  .dot.off{background:var(--off); box-shadow:0 0 6px var(--off); opacity:.85; animation:breath 3.2s ease-in-out infinite}
+  @keyframes pulse{
+    0%,100%{ transform:scale(1); box-shadow:0 0 10px var(--on), 0 0 18px rgba(87,255,176,.25) }
+    50%{ transform:scale(1.15); box-shadow:0 0 16px var(--on), 0 0 28px rgba(87,255,176,.35) }
+  }
+  @keyframes breath{
+    0%,100%{ opacity:.75 } 50%{ opacity:1 }
+  }
+
+  /* Footer */
+  footer{
+    display:flex; justify-content:space-between; align-items:center; color:var(--muted);
+    font-size:12px; margin-top:10px; padding:0 4px;
+  }
+  .brand a{color:#d9c9ff; text-decoration:none; border-bottom:1px dotted #5b3fb0}
+
+  /* Custom tooltip */
+  .tip{
+    position: fixed; pointer-events:none; z-index:20;
+    background: linear-gradient(180deg, #160b2e, #0c071b);
+    color:#eae4ff; border:1px solid #4f38a3; border-radius:10px; padding:10px 12px; font-size:12px;
+    box-shadow: 0 0 18px rgba(155,92,255,.25);
+    opacity:0; transform: translateY(6px); transition: opacity .12s ease, transform .12s ease;
+    max-width: 280px; white-space:normal;
+  }
+  .tip.show{ opacity:1; transform: translateY(0) }
+  .tip .k{ color:#a899c6 }
+  .tip .v{ color:#fff }
+</style>
 </head>
-<body class="bg-black text-zinc-100 min-h-screen">
-  <!-- CONFIG -->
-  <script>
-    // ================== CONFIG ==================
-    // If your API is same-origin, leave as ''.
-    // Otherwise set to 'http://localhost:8000' or whatever your FastAPI/Flask base is.
-    const API_BASE = '';
-    // Polling interval (ms) when not using SSE
-    const POLL_MS = 5000;
-    // Max events kept in feed
-    const MAX_EVENTS = 200;
-    // ===========================================
-  </script>
+<body>
+  <div class="bg-grid"></div>
+  <div class="wrap">
+    <header>
+      <h1>NetAlert 3.0 — Nodes Dashboard</h1>
+      <div class="gh-btn">
+        <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">GitHub ↗</a>
+      </div>
+    </header>
 
-  <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-black/70 backdrop-blur supports-[backdrop-filter]:bg-black/40">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 ring-2 ring-blue-500/40"></div>
-        <h1 class="text-lg sm:text-xl font-semibold tracking-tight">NetAlert-3.0 — Monitor</h1>
+    <div class="panel">
+      <!-- Controls -->
+      <div class="top-row">
+        <input id="url" type="text" placeholder="/nodes.json" value="/nodes.json" />
+        <button id="btnLoad">Load</button>
+        <label class="small"><input id="autochk" type="checkbox"> Auto‑refresh</label>
+        <input id="interval" type="number" min="2" value="5" />
+        <button id="btnLocal">Load local…</button>
+        <input id="file" type="file" accept="application/json" style="display:none" />
       </div>
-      <div id="connStatus" class="text-xs badge ring-blue-400/30 text-blue-300 bg-blue-400/10 px-2 py-1">Connecting…</div>
-    </div>
-  </header>
 
-  <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    <!-- Top stats -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="card p-4">
-        <p class="muted text-xs">Online now</p>
-        <p id="onlineCount" class="text-3xl font-semibold mt-1">0</p>
+      <!-- Cards -->
+      <div class="cards">
+        <div class="card"><div class="label">Online</div><div class="val" id="vOnline">—</div></div>
+        <div class="card"><div class="label">Total</div><div class="val" id="vTotal">—</div></div>
+        <div class="card"><div class="label">Uptime %</div><div class="val" id="vUptime">—</div></div>
       </div>
-      <div class="card p-4">
-        <p class="muted text-xs">Known devices</p>
-        <p id="totalCount" class="text-3xl font-semibold mt-1">0</p>
-      </div>
-      <div class="card p-4">
-        <p class="muted text-xs">Last event</p>
-        <p id="lastEvent" class="text-base mt-1">—</p>
-      </div>
-      <div class="card p-4">
-        <p class="muted text-xs">Mode</p>
-        <p id="mode" class="text-base mt-1">Detecting…</p>
-      </div>
-    </section>
 
-    <!-- Controls -->
-    <section class="card p-4">
-      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-        <div class="flex gap-3 items-center w-full md:w-auto">
-          <input id="search" type="text" placeholder="Search IP / MAC / vendor…" class="w-full md:w-80 rounded-xl bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <select id="statusFilter" class="rounded-xl bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="all">All</option>
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 text-sm">
-            <input id="soundToggle" type="checkbox" class="h-4 w-4 rounded border-zinc-700 bg-zinc-900" />
-            Play sound on new device
-          </label>
-          <button id="refreshBtn" class="rounded-xl bg-zinc-100/10 hover:bg-zinc-100/15 border border-zinc-800 px-3 py-2 text-sm">Refresh</button>
-        </div>
+      <!-- Filters -->
+      <div class="filters">
+        <input id="search" type="text" placeholder="Filter by IP, host, vendor, MAC…" />
+        <select id="status">
+          <option value="">All</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
       </div>
-    </section>
 
-    <!-- Devices table -->
-    <section class="card">
-      <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <h2 class="text-sm font-semibold">Devices</h2>
-        <span id="deviceCountLabel" class="muted text-xs">0 shown</span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm">
-          <thead class="bg-zinc-900/60 text-zinc-300">
+      <!-- Table -->
+      <div class="grid">
+        <table>
+          <thead>
             <tr>
-              <th class="text-left font-medium px-4 py-2">IP</th>
-              <th class="text-left font-medium px-4 py-2">MAC</th>
-              <th class="text-left font-medium px-4 py-2">Vendor</th>
-              <th class="text-left font-medium px-4 py-2">Status</th>
-              <th class="text-left font-medium px-4 py-2">First seen</th>
-              <th class="text-left font-medium px-4 py-2">Last seen</th>
+              <th>IP</th>
+              <th>Host</th>
+              <th>Vendor</th>
+              <th>MAC</th>
+              <th>Status</th>
             </tr>
           </thead>
-          <tbody id="deviceTbody" class="divide-y divide-zinc-800"></tbody>
+          <tbody id="tbody"></tbody>
         </table>
       </div>
-    </section>
+    </div>
 
-    <!-- Event feed -->
-    <section class="card">
-      <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-        <h2 class="text-sm font-semibold">Event feed</h2>
-        <button id="scrollToTop" class="text-xs muted hover:text-zinc-200">Scroll to top</button>
+    <footer>
+      <div>Last update: <span id="last">—</span></div>
+      <div class="brand">Developed by <strong>NSM Barii</strong> ·
+        <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">github.com/nsm-barii/netalert-3.0</a>
       </div>
-      <ol id="eventFeed" class="max-h-[40vh] overflow-y-auto scroll-smooth divide-y divide-zinc-800">
-        <!-- events injected here -->
-      </ol>
-    </section>
-
-    <footer class="py-8 text-center text-xs text-zinc-500">
-      Built lean for Bari · NetAlert-3.0 · Single-file GUI · No build tools
     </footer>
-  </main>
+  </div>
 
-  <script>
-    'use strict';
+  <!-- Tooltip element -->
+  <div class="tip" id="tip"></div>
 
-    // ------- Helpers -------
-    const API = {
-      summary: () => `${API_BASE}/api/summary`,
-      devices: () => `${API_BASE}/api/devices`,
-      events: (limit=100) => `${API_BASE}/api/events?limit=${limit}`,
-      stream: () => `${API_BASE}/api/events/stream`,
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  const url = $('url'), btnLoad = $('btnLoad'), btnLocal = $('btnLocal'), file = $('file');
+  const autochk = $('autochk'), interval = $('interval');
+  const search = $('search'), status = $('status'), tbody = $('tbody');
+  const vOnline = $('vOnline'), vTotal = $('vTotal'), vUptime = $('vUptime'), last = $('last');
+  const tip = $('tip');
+
+  let rows = [];
+  let timer = null;
+
+  const normalize = (data) => {
+    let nodes = data.nodes || [];
+    if (!Array.isArray(nodes)) nodes = Object.values(nodes || {});
+    const list = nodes.map(n => ({
+      ip: n.target_ip || n.ip || '',
+      host: n.host || '',
+      vendor: n.vendor || '',
+      mac: n.target_mac || n.mac || '',
+      status: String(n.status || '').toLowerCase(),
+      last_seen: n.last_seen || null
+    }));
+    const online = list.filter(x => x.status === 'online').length;
+    const total = list.length;
+    const uptime = total ? Math.round((online/total)*100) : 0;
+    return { list, online, total, uptime };
+  };
+
+  const sortOnlineFirst = arr =>
+    arr.slice().sort((a,b) => (a.status === b.status ? (a.ip||'').localeCompare(b.ip||'') : a.status === 'online' ? -1 : 1));
+
+  const buildRowHTML = (r) => {
+    const on = r.status === 'online';
+    const payload = encodeURIComponent(JSON.stringify({
+      ip:r.ip, host:r.host, vendor:r.vendor, mac:r.mac, status:r.status, last_seen:r.last_seen
+    }));
+    return `<tr data-tip="${payload}">
+      <td>${r.ip || '—'}</td>
+      <td>${r.host || '—'}</td>
+      <td>${r.vendor || '—'}</td>
+      <td>${r.mac || '—'}</td>
+      <td><span class="status ${on?'on':'off'}"><span class="dot ${on?'on':'off'}"></span>${on?'online':'offline'}</span></td>
+    </tr>`;
+  };
+
+  const render = () => {
+    const q = search.value.trim().toLowerCase();
+    const sf = status.value;
+    const filtered = rows.filter(r =>
+      (r.ip + ' ' + r.host + ' ' + r.vendor + ' ' + r.mac).toLowerCase().includes(q) &&
+      (!sf || r.status === sf)
+    );
+    const ordered = sortOnlineFirst(filtered);
+    tbody.innerHTML = ordered.map(buildRowHTML).join('');
+  };
+
+  const setSummary = ({online,total,uptime}) => {
+    vOnline.textContent = online;
+    vTotal.textContent = total;
+    vUptime.textContent = total ? `${uptime}%` : '—';
+  };
+
+  const touchLast = () => last.textContent = new Date().toLocaleString();
+
+  async function loadFromUrl(u){
+    try{
+      const resp = await fetch(u, {cache:'no-store'});
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const n = normalize(data);
+      rows = n.list; setSummary(n); render(); touchLast();
+      installRowTooltips();
+    }catch(e){ alert('Load failed: ' + e.message); }
+  }
+
+  const loadFromFile = f => {
+    const rd = new FileReader();
+    rd.onload = ev => {
+      try{
+        const data = JSON.parse(ev.target.result);
+        const n = normalize(data);
+        rows = n.list; setSummary(n); render(); touchLast();
+        installRowTooltips();
+      }catch(e){ alert('Bad JSON: ' + e.message); }
     };
+    rd.readAsText(f);
+  };
 
-    const fmt = new Intl.DateTimeFormat([], { dateStyle: 'medium', timeStyle: 'medium' });
-    const byLastSeenDesc = (a, b) => new Date(b.last_seen || 0) - new Date(a.last_seen || 0);
-
-    const el = id => document.getElementById(id);
-
-    function pill(status) {
-      const s = String(status || '').toLowerCase();
-      const base = 'status-pill';
-      if (s === 'online') return `<span class="${base} pill-online"><span class="h-2 w-2 rounded-full bg-green-400 inline-block"></span>Online</span>`;
-      if (s === 'rogue')  return `<span class="${base} pill-rogue"><span class="h-2 w-2 rounded-full bg-red-400 inline-block"></span>Rogue</span>`;
-      return `<span class="${base} pill-offline"><span class="h-2 w-2 rounded-full bg-zinc-300 inline-block"></span>Offline</span>`;
-    }
-
-    function safe(s) { return (s ?? '').toString(); }
-
-    function fmtTime(t) {
-      if (!t) return '—';
-      try { return fmt.format(new Date(t)); } catch { return safe(t); }
-    }
-
-    function beep() {
-      if (!soundEnabled) return;
-      try {
-        if (!window.__ac) window.__ac = new (window.AudioContext || window.webkitAudioContext)();
-        const ac = window.__ac;
-        const o = ac.createOscillator();
-        const g = ac.createGain();
-        o.type = 'square';
-        o.frequency.value = 880; // A5
-        g.gain.value = 0.03;
-        o.connect(g).connect(ac.destination);
-        const now = ac.currentTime;
-        o.start(now);
-        o.stop(now + 0.12);
-      } catch {}
-    }
-
-    // ------- State -------
-    let devices = [];
-    let events = [];
-    let soundEnabled = false;
-    let useSSE = false;
-    let pollTimer = null;
-    let es = null; // EventSource
-
-    // ------- UI bindings -------
-    el('soundToggle').addEventListener('change', (e) => {
-      soundEnabled = e.target.checked;
-      // Kickstart AudioContext on first user interaction for autoplay policies
-      if (soundEnabled) beep();
-    });
-
-    el('refreshBtn').addEventListener('click', () => {
-      refreshAll();
-    });
-
-    el('search').addEventListener('input', renderDevices);
-    el('statusFilter').addEventListener('change', renderDevices);
-    el('scrollToTop').addEventListener('click', () => el('eventFeed').scrollTo({ top: 0, behavior: 'smooth' }));
-
-    // ------- Data fetchers -------
-    async function fetchJSON(url, opts) {
-      const r = await fetch(url, { cache: 'no-cache', ...opts });
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      return await r.json();
-    }
-
-    async function loadSummary() {
-      try {
-        const s = await fetchJSON(API.summary());
-        el('onlineCount').textContent = s.online_count ?? 0;
-        el('totalCount').textContent = s.total_count ?? 0;
-        el('lastEvent').textContent = fmtTime(s.last_event);
-      } catch (e) {
-        // best-effort only; show connection hint in header
-      }
-    }
-
-    async function loadDevices() {
-      try {
-        const list = await fetchJSON(API.devices());
-        devices = Array.isArray(list) ? list : (list.devices || []);
-        devices.sort(byLastSeenDesc);
-        renderDevices();
-      } catch (e) {
-        // swallow; UI will show last-known state
-      }
-    }
-
-    async function loadEvents(initLimit=50) {
-      try {
-        const list = await fetchJSON(API.events(initLimit));
-        events = Array.isArray(list) ? list : (list.events || []);
-        // Sort ascending by ts so newest goes to bottom then we render reversed
-        events.sort((a,b) => new Date(a.ts||0) - new Date(b.ts||0));
-        renderEvents();
-      } catch (e) {}
-    }
-
-    function startPolling() {
-      if (pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(() => {
-        loadSummary();
-        loadDevices();
-        // do not reload whole event history every tick
-      }, POLL_MS);
-      useSSE = false;
-      el('connStatus').textContent = `Polling every ${Math.round(POLL_MS/1000)}s`;
-      el('connStatus').className = 'text-xs badge ring-amber-400/30 text-amber-300 bg-amber-400/10 px-2 py-1';
-      el('mode').textContent = 'Polling';
-    }
-
-    function startSSE() {
-      if (es) { try { es.close(); } catch {} es = null; }
-      try {
-        es = new EventSource(API.stream());
-      } catch (e) {
-        startPolling();
-        return;
-      }
-
-      let retryMs = 1000;
-
-      es.onopen = () => {
-        useSSE = true;
-        el('connStatus').textContent = 'Live (SSE)';
-        el('connStatus').className = 'text-xs badge ring-emerald-400/30 text-emerald-300 bg-emerald-400/10 px-2 py-1';
-        el('mode').textContent = 'Live (SSE)';
-      };
-
-      es.onmessage = (ev) => {
-        // Expect JSON event: { ts, type: 'online'|'offline'|'rogue', ip, mac, vendor }
-        try {
-          const evt = JSON.parse(ev.data);
-          handleEvent(evt);
-        } catch {}
-      };
-
-      es.onerror = () => {
-        // Switch to polling and try to reconnect with backoff
-        startPolling();
-        try { es.close(); } catch {}
-        es = null;
-        setTimeout(() => startSSE(), Math.min(retryMs *= 2, 30000));
-      };
-    }
-
-    function handleEvent(evt) {
-      if (!evt || !evt.ts) evt.ts = new Date().toISOString();
-      events.push(evt);
-      if (events.length > MAX_EVENTS) events.shift();
-      renderEvents(true);
-
-      // Update summary counters optimistically
-      if (evt.type === 'online') {
-        el('onlineCount').textContent = (Number(el('onlineCount').textContent)||0) + 1;
-        beep();
-      } else if (evt.type === 'offline') {
-        el('onlineCount').textContent = Math.max(0, (Number(el('onlineCount').textContent)||0) - 1);
-      }
-      el('lastEvent').textContent = fmtTime(evt.ts);
-
-      // Update devices list in memory
-      let d = devices.find(x => (x.mac && evt.mac && x.mac.toLowerCase()===evt.mac.toLowerCase()) || (x.ip && evt.ip && x.ip===evt.ip));
-      if (!d) {
-        d = { ip: evt.ip, mac: evt.mac, vendor: evt.vendor, first_seen: evt.ts, last_seen: evt.ts, status: evt.type==='offline' ? 'offline' : 'online' };
-        devices.push(d);
+  // Tooltip helpers
+  function showTip(evt, row){
+    try{
+      const data = JSON.parse(decodeURIComponent(row.dataset.tip||'%7B%7D'));
+      const lastSeen = data.last_seen ? new Date(data.last_seen).toLocaleString() : '—';
+      tip.innerHTML = `
+        <div><span class="k">Host:</span> <span class="v">${data.host || '—'}</span></div>
+        <div><span class="k">IP:</span> <span class="v">${data.ip || '—'}</span></div>
+        <div><span class="k">MAC:</span> <span class="v">${data.mac || '—'}</span></div>
+        <div><span class="k">Vendor:</span> <span class="v">${data.vendor || '—'}</span></div>
+        <div><span class="k">Last seen:</span> <span class="v">${lastSeen}</span></div>
+      `;
+    }catch{ tip.textContent = 'Device info'; }
+    positionTip(evt);
+    tip.classList.add('show');
+  }
+  function hideTip(){ tip.classList.remove('show'); }
+  function positionTip(evt){
+    const pad = 14;
+    let x = evt.clientX + pad;
+    let y = evt.clientY + pad;
+    const r = tip.getBoundingClientRect();
+    if (x + r.width > window.innerWidth - 8) x = evt.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight - 8) y = evt.clientY - r.height - pad;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function installRowTooltips(){
+    // delegate events to tbody
+    tbody.onmousemove = (e) => {
+      const row = e.target?.closest('tr[data-tip]');
+      if (row){
+        showTip(e, row);
       } else {
-        d.status = (evt.type==='offline') ? 'offline' : (evt.type==='rogue' ? 'rogue' : 'online');
-        d.last_seen = evt.ts;
-        if (!d.first_seen) d.first_seen = evt.ts;
-        if (!d.vendor && evt.vendor) d.vendor = evt.vendor;
+        hideTip();
       }
-      devices.sort(byLastSeenDesc);
-      renderDevices();
-    }
+    };
+    tbody.onmouseleave = hideTip;
+  }
 
-    // ------- Renderers -------
-    function renderDevices() {
-      const q = el('search').value.trim().toLowerCase();
-      const sf = el('statusFilter').value;
-      const rows = [];
-      let shown = 0;
-      for (const d of devices) {
-        if (sf !== 'all' && String(d.status).toLowerCase() !== sf) continue;
-        const hay = `${d.ip||''} ${d.mac||''} ${(d.vendor||'')}`.toLowerCase();
-        if (q && !hay.includes(q)) continue;
-        shown++;
-        rows.push(`
-          <tr class="hover:bg-zinc-900/50">
-            <td class="px-4 py-2 font-medium">${safe(d.ip)}</td>
-            <td class="px-4 py-2">${safe(d.mac)}</td>
-            <td class="px-4 py-2 text-zinc-300">${safe(d.vendor)}</td>
-            <td class="px-4 py-2">${pill(d.status)}</td>
-            <td class="px-4 py-2 text-zinc-300">${fmtTime(d.first_seen)}</td>
-            <td class="px-4 py-2 text-zinc-300">${fmtTime(d.last_seen)}</td>
-          </tr>`);
-      }
-      el('deviceTbody').innerHTML = rows.join('');
-      el('deviceCountLabel').textContent = `${shown} shown`;
-    }
+  // events
+  btnLoad.addEventListener('click', () => loadFromUrl(url.value.trim() || '/nodes.json'));
+  url.addEventListener('keydown', e => { if(e.key==='Enter') btnLoad.click(); });
+  btnLocal.addEventListener('click', () => file.click());
+  file.addEventListener('change', e => { if(e.target.files?.[0]) loadFromFile(e.target.files[0]); });
+  search.addEventListener('input', () => { render(); installRowTooltips(); });
+  status.addEventListener('change', () => { render(); installRowTooltips(); });
 
-    function renderEvents(scrollToBottom=false) {
-      const feed = el('eventFeed');
-      const items = [...events].reverse().map(e => {
-        const type = (e.type||'').toLowerCase();
-        const color = type==='online' ? 'text-emerald-300' : (type==='offline' ? 'text-zinc-300' : 'text-red-300');
-        const dot = type==='online' ? 'bg-emerald-400' : (type==='offline' ? 'bg-zinc-300' : 'bg-red-400');
-        const label = type.charAt(0).toUpperCase() + type.slice(1);
-        return `
-          <li class="px-4 py-3 flex items-start gap-3">
-            <span class="mt-1 h-2.5 w-2.5 rounded-full ${dot} inline-block"></span>
-            <div class="flex-1 min-w-0">
-              <div class="flex flex-wrap items-center gap-x-3">
-                <span class="text-xs ${color} badge ring-white/10 bg-white/5">${label}</span>
-                <span class="text-sm font-medium">${safe(e.ip||'')}</span>
-                <span class="muted text-xs">${safe(e.mac||'')}</span>
-                <span class="muted text-xs">${safe(e.vendor||'')}</span>
-              </div>
-              <div class="muted text-xs mt-1">${fmtTime(e.ts)}</div>
-            </div>
-          </li>`;
-      });
-      feed.innerHTML = items.join('');
-      if (scrollToBottom) feed.scrollTop = feed.scrollHeight;
-    }
+  autochk.addEventListener('change', () => {
+    if (autochk.checked) {
+      const sec = Math.max(2, parseInt(interval.value||'5',10));
+      timer && clearInterval(timer);
+      timer = setInterval(() => btnLoad.click(), sec*1000);
+    } else { timer && clearInterval(timer); timer = null; }
+  });
+  interval.addEventListener('change', () => {
+    if (autochk.checked) { autochk.checked = false; autochk.dispatchEvent(new Event('change')); autochk.checked = true; autochk.dispatchEvent(new Event('change')); }
+  });
 
-    // ------- Boot -------
-    async function refreshAll() {
-      await Promise.all([loadSummary(), loadDevices()]);
+  // demo seed (remove if you want it empty)
+  const demo = {
+    "summary":{"nodes_online":2,"nodes_total":3},
+    "nodes":{
+      "192.168.1.2":{"target_ip":"192.168.1.2","target_mac":"01:A1:B2:C3:D4:F6","host":"nsm-switch","vendor":"NETGEAR","status":"online","last_seen":"2025-08-13T03:02:00Z"},
+      "192.168.1.8":{"target_ip":"192.168.1.8","target_mac":"AA:BB:CC:DD:EE:FF","host":"sec-cam","vendor":"Hikvision","status":"offline","last_seen":"2025-08-12T23:41:00Z"},
+      "192.168.1.20":{"target_ip":"192.168.1.20","target_mac":"DE:AD:BE:EF:01:02","host":"barii-laptop","vendor":"Lenovo","status":"online","last_seen":"2025-08-13T03:05:00Z"}
     }
-
-    (async function init() {
-      // initial data
-      await Promise.all([loadSummary(), loadDevices(), loadEvents(30)]);
-      // try SSE first, fallback to polling
-      startSSE();
-      // keep a slow refresh of events list (history) every 60s in case SSE misses anything
-      setInterval(() => loadEvents(30), 60000);
-    })();
-  </script>
+  };
+  const n0 = normalize(demo);
+  rows = n0.list; setSummary(n0); (render(), installRowTooltips());
+  last.textContent = new Date().toLocaleString();
+})();
+</script>
 </body>
 </html>
