@@ -150,9 +150,8 @@ class File_Handling():
                 path = cls.base_dir / "settings.json"
                 data = {
                         "iface": "",
-                        "captures": "",
-                        "nodes_online": 0,
-                        "nodes_offline": 0
+                        "subnet": "",
+                        "captures": ""
                     }
 
 
@@ -241,6 +240,7 @@ class File_Handling():
                 path = cls.base_dir / "settings.json"
                 data = {
                         "iface": "",
+                        "subnet": "",
                         "captures": ""
                     }
 
@@ -484,6 +484,8 @@ class Push_Network_Status():
                 console.print(f"[bold red]push_device_info - Exception Error:[bold yellow] {e}")
 
                 break
+
+            
         
 
     

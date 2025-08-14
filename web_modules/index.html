@@ -1,24 +1,23 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NetAlert 3.0 — Nodes Dashboard</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>NetAlert 3.0 — Nodes Dashboard (Optimized)</title>
 <style>
   :root{
-    --bg:#06030a;             /* deep black-purple */
-    --grid:#1a1030;           /* background grid lines */
-    --panel:#0b0614;          /* card/panel */
-    --line:#2e1f4d;           /* borders */
-    --fg:#eae4ff;             /* primary text */
-    --muted:#a899c6;          /* secondary text */
-    --accent:#9b5cff;         /* neon purple */
-    --accent2:#43ffd8;        /* cyan highlight */
-    --on:#57ffb0;             /* online green-cyan */
-    --off:#ff7691;            /* offline pink */
-    --row:#0f0a1a;            /* table row */
-    --rowHover:#140e24;       /* table row hover */
-    --tooltip:#100a1e;        /* tooltip bg */
+    --bg:#06030a;
+    --grid:#1a1030;
+    --panel:#0b0614;
+    --line:#2e1f4d;
+    --fg:#eae4ff;
+    --muted:#a899c6;
+    --accent:#9b5cff;
+    --accent2:#43ffd8;
+    --on:#57ffb0;
+    --off:#ff7691;
+    --row:#0f0a1a;
+    --rowHover:#140e24;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -30,7 +29,7 @@
     overflow-x:hidden;
   }
 
-  /* Subtle animated grid background */
+  /* Animated grid background (disabled in .perf) */
   .bg-grid{
     position:fixed; inset:0; z-index:-1;
     background-image:
@@ -45,199 +44,182 @@
     100%{ transform: translate3d(-32px,-32px,0) }
   }
 
-  .wrap{max-width:1024px; margin:28px auto; padding:0 14px}
+  .wrap{max-width:1024px; margin:20px auto; padding:0 12px}
 
-  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  header{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:10px 12px}
   h1{
-    margin:0; font-size:26px; letter-spacing:.3px;
+    margin:0; font-size:22px; letter-spacing:.3px;
     background: linear-gradient(90deg, var(--accent), var(--accent2));
     -webkit-background-clip:text; background-clip:text; color:transparent;
-    text-shadow:0 0 18px rgba(155,92,255,.25);
   }
+
   .gh-btn a{
     display:inline-flex; align-items:center; gap:8px;
-    padding:10px 14px; border:1px solid var(--line);
-    border-radius:10px; color:var(--fg); text-decoration:none; background:linear-gradient(180deg,#0e0820,#0a0618);
-    box-shadow:0 0 0 1px rgba(155,92,255,.25) inset, 0 0 14px rgba(67,255,216,.08);
+    padding:8px 12px; border:1px solid var(--line);
+    border-radius:10px; color:var(--fg); text-decoration:none; background:#0a0618;
   }
-  .gh-btn a:hover{ box-shadow:0 0 0 1px rgba(67,255,216,.35) inset, 0 0 18px rgba(155,92,255,.2) }
+  .gh-btn a:hover{ border-color:#6a44cc }
 
   .panel{
-    border:1px solid var(--line); border-radius:14px; padding:12px;
-    background: linear-gradient(180deg, rgba(22,14,40,.7), rgba(12,6,20,.7));
-    backdrop-filter: blur(3px);
-    box-shadow: 0 0 22px rgba(155,92,255,.08), inset 0 0 24px rgba(67,255,216,.04);
+    border:1px solid var(--line); border-radius:12px; padding:10px;
+    background: #0c0614;
   }
 
-  /* Controls */
   .top-row{
-    display:grid; gap:10px;
+    display:grid; gap:8px;
     grid-template-columns: 1fr auto auto auto auto;
-    align-items:center; margin-bottom:12px;
+    align-items:center; margin-bottom:10px;
   }
   input[type="text"], input[type="number"]{
-    width:100%; background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px;
-    outline:none; box-shadow:0 0 0 0 rgba(155,92,255,.0); transition: box-shadow .2s, border-color .2s;
+    width:100%; background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:8px 10px;
+    outline:none;
   }
-  input[type="text"]:focus, input[type="number"]:focus{
-    border-color:#5f3bb5; box-shadow:0 0 0 3px rgba(155,92,255,.12);
-  }
-  input[type="number"]{ width:84px; text-align:center }
+  input[type="number"]{ width:80px; text-align:center }
   button{
-    background:linear-gradient(180deg,#140a28,#0f0820); color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px; cursor:pointer;
-    transition: border-color .2s, transform .05s;
+    background:#0f0820; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:8px 10px; cursor:pointer;
   }
-  button:hover{ border-color:#6a44cc }
-  button:active{ transform: translateY(1px) }
   label.small{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
 
-  /* Cards */
   .cards{
-    display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;
   }
   .card{
-    border:1px dashed #3a2866; border-radius:12px; padding:12px;
-    background: radial-gradient(140px 45px at 10% 0, rgba(155,92,255,.12), transparent 60%), #110922;
+    border:1px dashed #3a2866; border-radius:12px; padding:10px; background:#110922;
   }
   .card .label{color:var(--muted); font-size:12px; margin-bottom:2px}
-  .card .val{font-size:22px; letter-spacing:.3px; color:#d9c9ff}
+  .card .val{font-size:20px; letter-spacing:.3px; color:#d9c9ff}
 
-  /* Filters */
-  .filters{display:flex; gap:10px; align-items:center; margin-bottom:10px}
-  .filters select{ background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:10px 12px; }
+  .filters{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .filters select{ background:#120b22; color:var(--fg); border:1px solid #3a2866; border-radius:10px; padding:8px 10px; }
 
-  /* Table */
   .grid{ border:1px solid var(--line); border-radius:12px; overflow: hidden; }
-  table{
-    width:100%; border-collapse:separate; border-spacing:0; background:#120a22; table-layout:auto;
-  }
-  th,td{
-    padding:11px 14px; border-bottom:1px solid #2b1d4d; white-space:nowrap; font-size:14px; text-align:left;
-  }
-  th{
-    color:#d9c9ff; background:linear-gradient(180deg,#180c33,#120a24); position:sticky; top:0; z-index:2; font-weight:600;
-    box-shadow: 0 3px 0 0 rgba(0,0,0,.15);
-  }
+  table{ width:100%; border-collapse:separate; border-spacing:0; background:#120a22; table-layout:auto; }
+  th,td{ padding:10px 12px; border-bottom:1px solid #2b1d4d; white-space:nowrap; font-size:14px; text-align:left; }
+  th{ color:#d9c9ff; background:#120a24; position:sticky; top:0; z-index:2; font-weight:600; }
   td{ font-weight:500; background:var(--row) }
   tr:hover td{ background:var(--rowHover) }
 
-  /* Status pill + dot */
-  .status{ display:inline-flex; align-items:center; gap:10px; padding:4px 12px; border-radius:999px; border:1px solid;
+  .status{ display:inline-flex; align-items:center; gap:10px; padding:2px 10px; border-radius:999px; border:1px solid;
            font-size:12px; text-transform:capitalize; }
   .on{ color:var(--on); border-color:#1c503f; background:#0b1a15 }
   .off{ color:var(--off); border-color:#512a34; background:#1a0d12 }
-  .dot{width:10px;height:10px;border-radius:50%}
-  .dot.on{background:var(--on); box-shadow:0 0 10px var(--on), 0 0 18px rgba(87,255,176,.25); animation:pulse 1.8s ease-in-out infinite}
-  .dot.off{background:var(--off); box-shadow:0 0 6px var(--off); opacity:.85; animation:breath 3.2s ease-in-out infinite}
-  @keyframes pulse{
-    0%,100%{ transform:scale(1); box-shadow:0 0 10px var(--on), 0 0 18px rgba(87,255,176,.25) }
-    50%{ transform:scale(1.15); box-shadow:0 0 16px var(--on), 0 0 28px rgba(87,255,176,.35) }
-  }
-  @keyframes breath{
-    0%,100%{ opacity:.75 } 50%{ opacity:1 }
-  }
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot.on{background:var(--on)}
+  .dot.off{background:var(--off)}
 
-  /* Footer */
-  footer{
-    display:flex; justify-content:space-between; align-items:center; color:var(--muted);
-    font-size:12px; margin-top:10px; padding:0 4px;
-  }
+  footer{ display:flex; justify-content:space-between; align-items:center; color:var(--muted);
+          font-size:12px; margin-top:8px; padding:0 4px; }
   .brand a{color:#d9c9ff; text-decoration:none; border-bottom:1px dotted #5b3fb0}
 
-  /* Custom tooltip */
-  .tip{
-    position: fixed; pointer-events:none; z-index:20;
-    background: linear-gradient(180deg, #160b2e, #0c071b);
-    color:#eae4ff; border:1px solid #4f38a3; border-radius:10px; padding:10px 12px; font-size:12px;
-    box-shadow: 0 0 18px rgba(155,92,255,.25);
-    opacity:0; transform: translateY(6px); transition: opacity .12s ease, transform .12s ease;
-    max-width: 280px; white-space:normal;
+  /* Perf Badge + layout */
+  .right{display:flex;gap:8px;align-items:center}
+  .perfToggle{font-size:12px;color:#94a9a2;display:flex;align-items:center;gap:6px}
+  #perfBadge{font-size:12px;color:#47e0ac;border:1px solid #1a503f;padding:4px 8px;border-radius:8px;background:#0a1613}
+
+  /* --- HARDCORE PERF MODE --- */
+  body.perf .bg-grid{display:none}
+  body.perf *{ text-shadow:none !important; box-shadow:none !important; transition:none !important; animation:none !important; }
+  body.perf .panel, body.perf .card, body.perf .grid, body.perf input, body.perf button, body.perf select{
+    backdrop-filter:none !important; filter:none !important;
   }
-  .tip.show{ opacity:1; transform: translateY(0) }
-  .tip .k{ color:#a899c6 }
-  .tip .v{ color:#fff }
+  body.perf th{ position:static } /* remove sticky header cost */
 </style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="wrap">
-    <header>
-      <h1>NetAlert 3.0 — Nodes Dashboard</h1>
+<div class="bg-grid"></div>
+<div class="wrap">
+  <header>
+    <h1>NetAlert 3.0 — Nodes Dashboard</h1>
+    <div class="right">
+      <div id="perfBadge">Performance Mode ON</div>
+      <label class="perfToggle"><input id="perfToggle" type="checkbox" checked/> Perf mode</label>
       <div class="gh-btn">
-        <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">GitHub ↗</a>
-      </div>
-    </header>
-
-    <div class="panel">
-      <!-- Controls -->
-      <div class="top-row">
-        <input id="url" type="text" placeholder="/nodes.json" value="/nodes.json" />
-        <button id="btnLoad">Load</button>
-        <label class="small"><input id="autochk" type="checkbox"> Auto‑refresh</label>
-        <input id="interval" type="number" min="2" value="5" />
-        <button id="btnLocal">Load local…</button>
-        <input id="file" type="file" accept="application/json" style="display:none" />
-      </div>
-
-      <!-- Cards -->
-      <div class="cards">
-        <div class="card"><div class="label">Online</div><div class="val" id="vOnline">—</div></div>
-        <div class="card"><div class="label">Total</div><div class="val" id="vTotal">—</div></div>
-        <div class="card"><div class="label">Uptime %</div><div class="val" id="vUptime">—</div></div>
-      </div>
-
-      <!-- Filters -->
-      <div class="filters">
-        <input id="search" type="text" placeholder="Filter by IP, host, vendor, MAC…" />
-        <select id="status">
-          <option value="">All</option>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </select>
-      </div>
-
-      <!-- Table -->
-      <div class="grid">
-        <table>
-          <thead>
-            <tr>
-              <th>IP</th>
-              <th>Host</th>
-              <th>Vendor</th>
-              <th>MAC</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+        <a href="https://github.com/nsm-barii/netalert-3.0" rel="noopener" target="_blank">GitHub ↗</a>
       </div>
     </div>
+  </header>
 
-    <footer>
-      <div>Last update: <span id="last">—</span></div>
-      <div class="brand">Developed by <strong>NSM Barii</strong> ·
-        <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener">github.com/nsm-barii/netalert-3.0</a>
-      </div>
-    </footer>
+  <div class="panel">
+    <div class="top-row">
+      <input id="url" placeholder="/nodes.json" type="text" value="/nodes.json"/>
+      <button id="btnLoad">Load</button>
+      <label class="small"><input id="autochk" type="checkbox"/> Auto‑refresh</label>
+      <input id="interval" min="2" type="number" value="5"/>
+      <button id="btnLocal">Load local…</button>
+      <input accept="application/json" id="file" style="display:none" type="file"/>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Online</div><div class="val" id="vOnline">—</div></div>
+      <div class="card"><div class="label">Total</div><div class="val" id="vTotal">—</div></div>
+      <div class="card"><div class="label">Uptime %</div><div class="val" id="vUptime">—</div></div>
+    </div>
+
+    <div class="filters">
+      <input id="search" placeholder="Filter by IP, host, vendor, MAC…" type="text"/>
+      <select id="status">
+        <option value="">All</option>
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+      </select>
+    </div>
+
+    <div class="grid">
+      <table>
+        <thead>
+          <tr>
+            <th>IP</th>
+            <th>Host</th>
+            <th>Vendor</th>
+            <th>MAC</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Tooltip element -->
-  <div class="tip" id="tip"></div>
+  <footer>
+    <div>Last update: <span id="last">—</span></div>
+    <div class="brand">Developed by <strong>NSM Barii</strong> ·
+      <a href="https://github.com/nsm-barii/netalert-3.0" rel="noopener" target="_blank">github.com/nsm-barii/netalert-3.0</a>
+    </div>
+  </footer>
+</div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-
   const url = $('url'), btnLoad = $('btnLoad'), btnLocal = $('btnLocal'), file = $('file');
   const autochk = $('autochk'), interval = $('interval');
-  const search = $('search'), status = $('status'), tbody = $('tbody');
+  const search = $('search'), statusSel = $('status'), tbody = $('tbody');
   const vOnline = $('vOnline'), vTotal = $('vTotal'), vUptime = $('vUptime'), last = $('last');
-  const tip = $('tip');
+  const perfToggle = $('perfToggle'); const badge = $('perfBadge');
 
   let rows = [];
   let timer = null;
+  let busy = false;
+  let searchTimer = null;
+  let prevHash = '';
+  let perfOn = true;
+  let limitRows = 500; // cap rendering in perf mode for huge lists
 
-  const normalize = (data) => {
+  function setPerfUI(){
+    document.body.classList.toggle('perf', perfOn);
+    if (badge){
+      badge.textContent = perfOn ? 'Performance Mode ON' : 'Performance Mode OFF';
+      badge.style.color = perfOn ? '#47e0ac' : '#ffd166';
+      badge.style.borderColor = perfOn ? '#1a503f' : '#8a6b1f';
+      badge.style.background = perfOn ? '#0a1613' : '#2a1f0a';
+    }
+    limitRows = perfOn ? 500 : 10000; // effectively unlimited in normal
+  }
+  perfOn = perfToggle?.checked ?? true;
+  setPerfUI();
+  perfToggle?.addEventListener('change', () => { perfOn = !!perfToggle.checked; setPerfUI(); render(); });
+
+  function normalize(data){
     let nodes = data.nodes || [];
     if (!Array.isArray(nodes)) nodes = Object.values(nodes || {});
     const list = nodes.map(n => ({
@@ -245,146 +227,114 @@
       host: n.host || '',
       vendor: n.vendor || '',
       mac: n.target_mac || n.mac || '',
-      status: String(n.status || '').toLowerCase(),
-      last_seen: n.last_seen || null
+      status: String(n.status || '').toLowerCase()
     }));
     const online = list.filter(x => x.status === 'online').length;
     const total = list.length;
     const uptime = total ? Math.round((online/total)*100) : 0;
     return { list, online, total, uptime };
-  };
-
-  const sortOnlineFirst = arr =>
-    arr.slice().sort((a,b) => (a.status === b.status ? (a.ip||'').localeCompare(b.ip||'') : a.status === 'online' ? -1 : 1));
-
-  const buildRowHTML = (r) => {
-    const on = r.status === 'online';
-    const payload = encodeURIComponent(JSON.stringify({
-      ip:r.ip, host:r.host, vendor:r.vendor, mac:r.mac, status:r.status, last_seen:r.last_seen
-    }));
-    return `<tr data-tip="${payload}">
-      <td>${r.ip || '—'}</td>
-      <td>${r.host || '—'}</td>
-      <td>${r.vendor || '—'}</td>
-      <td>${r.mac || '—'}</td>
-      <td><span class="status ${on?'on':'off'}"><span class="dot ${on?'on':'off'}"></span>${on?'online':'offline'}</span></td>
-    </tr>`;
-  };
-
-  const render = () => {
-    const q = search.value.trim().toLowerCase();
-    const sf = status.value;
-    const filtered = rows.filter(r =>
-      (r.ip + ' ' + r.host + ' ' + r.vendor + ' ' + r.mac).toLowerCase().includes(q) &&
-      (!sf || r.status === sf)
-    );
-    const ordered = sortOnlineFirst(filtered);
-    tbody.innerHTML = ordered.map(buildRowHTML).join('');
-  };
-
-  const setSummary = ({online,total,uptime}) => {
-    vOnline.textContent = online;
-    vTotal.textContent = total;
-    vUptime.textContent = total ? `${uptime}%` : '—';
-  };
-
-  const touchLast = () => last.textContent = new Date().toLocaleString();
-
-  async function loadFromUrl(u){
-    try{
-      const resp = await fetch(u, {cache:'no-store'});
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      const n = normalize(data);
-      rows = n.list; setSummary(n); render(); touchLast();
-      installRowTooltips();
-    }catch(e){ alert('Load failed: ' + e.message); }
   }
 
-  const loadFromFile = f => {
+  const sortOnlineFirst = arr => arr.slice().sort((a,b)=>{
+    if (a.status === b.status) return (a.ip||'').localeCompare(b.ip||'');
+    return a.status === 'online' ? -1 : 1;
+  });
+
+  function render(){
+    const q = (search?.value || '').trim().toLowerCase();
+    const sf = statusSel?.value || '';
+    const filtered = rows.filter(r => {
+      const hit = (r.ip + ' ' + r.host + ' ' + r.vendor + ' ' + r.mac).toLowerCase().includes(q);
+      const ok = !sf || r.status === sf;
+      return hit && ok;
+    });
+    const ordered = sortOnlineFirst(filtered);
+    const limited = ordered.slice(0, limitRows);
+
+    // single DOM write
+    let html = '';
+    for (const r of limited){
+      const on = r.status === 'online';
+      html += '<tr>' +
+        '<td>'+(r.ip || '—')+'</td>' +
+        '<td>'+(r.host || '—')+'</td>' +
+        '<td>'+(r.vendor || '—')+'</td>' +
+        '<td>'+(r.mac || '—')+'</td>' +
+        '<td><span class="status '+(on?'on':'off')+'"><span class="dot '+(on?'on':'off')+'"></span>'+(on?'online':'offline')+'</span></td>' +
+      '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  function setSummary({online,total,uptime}){
+    if (vOnline) vOnline.textContent = online;
+    if (vTotal) vTotal.textContent = total;
+    if (vUptime) vUptime.textContent = total ? (uptime + '%') : '—';
+  }
+
+  function touchLast(){ if (last) last.textContent = new Date().toLocaleString(); }
+
+  async function loadFromUrl(u){
+    if (busy) return; busy = true;
+    try{
+      // Use 'no-cache' so browser can return 304 if unchanged, saving work
+      const resp = await fetch(u, {cache:'no-cache'});
+      if (!resp.ok) throw new Error('HTTP '+resp.status);
+      const data = await resp.json();
+
+      if (perfOn){
+        // cheap change detection: compare length + simple checksum of IPs
+        const ipStr = (Array.isArray(data.nodes)?data.nodes:Object.values(data.nodes||{}))
+          .map(n => (n.ip||n.target_ip||'') + (n.status||'')).join('|');
+        const hash = ipStr.length + ':' + ipStr.slice(0,256);
+        if (hash === prevHash){ touchLast(); return; }
+        prevHash = hash;
+      }
+
+      const n = normalize(data);
+      rows = n.list; setSummary(n); render(); touchLast();
+    }catch(e){ alert('Load failed: ' + e.message); }
+    finally{ busy = false; }
+  }
+
+  function loadFromFile(f){
     const rd = new FileReader();
     rd.onload = ev => {
       try{
         const data = JSON.parse(ev.target.result);
+        prevHash = '';
         const n = normalize(data);
         rows = n.list; setSummary(n); render(); touchLast();
-        installRowTooltips();
       }catch(e){ alert('Bad JSON: ' + e.message); }
     };
     rd.readAsText(f);
-  };
-
-  // Tooltip helpers
-  function showTip(evt, row){
-    try{
-      const data = JSON.parse(decodeURIComponent(row.dataset.tip||'%7B%7D'));
-      const lastSeen = data.last_seen ? new Date(data.last_seen).toLocaleString() : '—';
-      tip.innerHTML = `
-        <div><span class="k">Host:</span> <span class="v">${data.host || '—'}</span></div>
-        <div><span class="k">IP:</span> <span class="v">${data.ip || '—'}</span></div>
-        <div><span class="k">MAC:</span> <span class="v">${data.mac || '—'}</span></div>
-        <div><span class="k">Vendor:</span> <span class="v">${data.vendor || '—'}</span></div>
-        <div><span class="k">Last seen:</span> <span class="v">${lastSeen}</span></div>
-      `;
-    }catch{ tip.textContent = 'Device info'; }
-    positionTip(evt);
-    tip.classList.add('show');
-  }
-  function hideTip(){ tip.classList.remove('show'); }
-  function positionTip(evt){
-    const pad = 14;
-    let x = evt.clientX + pad;
-    let y = evt.clientY + pad;
-    const r = tip.getBoundingClientRect();
-    if (x + r.width > window.innerWidth - 8) x = evt.clientX - r.width - pad;
-    if (y + r.height > window.innerHeight - 8) y = evt.clientY - r.height - pad;
-    tip.style.left = x + 'px';
-    tip.style.top = y + 'px';
-  }
-  function installRowTooltips(){
-    // delegate events to tbody
-    tbody.onmousemove = (e) => {
-      const row = e.target?.closest('tr[data-tip]');
-      if (row){
-        showTip(e, row);
-      } else {
-        hideTip();
-      }
-    };
-    tbody.onmouseleave = hideTip;
   }
 
-  // events
-  btnLoad.addEventListener('click', () => loadFromUrl(url.value.trim() || '/nodes.json'));
-  url.addEventListener('keydown', e => { if(e.key==='Enter') btnLoad.click(); });
-  btnLocal.addEventListener('click', () => file.click());
-  file.addEventListener('change', e => { if(e.target.files?.[0]) loadFromFile(e.target.files[0]); });
-  search.addEventListener('input', () => { render(); installRowTooltips(); });
-  status.addEventListener('change', () => { render(); installRowTooltips(); });
+  btnLoad?.addEventListener('click', () => loadFromUrl((url?.value || '/nodes.json').trim() || '/nodes.json'));
+  url?.addEventListener('keydown', e => { if (e.key === 'Enter') btnLoad?.click(); });
+  btnLocal?.addEventListener('click', () => file?.click());
+  file?.addEventListener('change', e => { const f=e.target.files?.[0]; if(f) loadFromFile(f); });
 
-  autochk.addEventListener('change', () => {
-    if (autochk.checked) {
-      const sec = Math.max(2, parseInt(interval.value||'5',10));
+  search?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const delay = perfOn ? 200 : 80;
+    searchTimer = setTimeout(render, delay);
+  });
+  statusSel?.addEventListener('change', render);
+
+  autochk?.addEventListener('change', () => {
+    if (autochk.checked){
+      const sec = Math.max(3, parseInt((interval?.value || '5'),10)); // min 3s to breathe
       timer && clearInterval(timer);
-      timer = setInterval(() => btnLoad.click(), sec*1000);
+      timer = setInterval(() => btnLoad?.click(), sec*1000);
     } else { timer && clearInterval(timer); timer = null; }
   });
-  interval.addEventListener('change', () => {
-    if (autochk.checked) { autochk.checked = false; autochk.dispatchEvent(new Event('change')); autochk.checked = true; autochk.dispatchEvent(new Event('change')); }
-  });
-
-  // demo seed (remove if you want it empty)
-  const demo = {
-    "summary":{"nodes_online":2,"nodes_total":3},
-    "nodes":{
-      "192.168.1.2":{"target_ip":"192.168.1.2","target_mac":"01:A1:B2:C3:D4:F6","host":"nsm-switch","vendor":"NETGEAR","status":"online","last_seen":"2025-08-13T03:02:00Z"},
-      "192.168.1.8":{"target_ip":"192.168.1.8","target_mac":"AA:BB:CC:DD:EE:FF","host":"sec-cam","vendor":"Hikvision","status":"offline","last_seen":"2025-08-12T23:41:00Z"},
-      "192.168.1.20":{"target_ip":"192.168.1.20","target_mac":"DE:AD:BE:EF:01:02","host":"barii-laptop","vendor":"Lenovo","status":"online","last_seen":"2025-08-13T03:05:00Z"}
+  interval?.addEventListener('change', () => {
+    if (autochk?.checked){
+      autochk.checked = false; autochk.dispatchEvent(new Event('change'));
+      autochk.checked = true;  autochk.dispatchEvent(new Event('change'));
     }
-  };
-  const n0 = normalize(demo);
-  rows = n0.list; setSummary(n0); (render(), installRowTooltips());
-  last.textContent = new Date().toLocaleString();
+  });
 })();
 </script>
 </body>

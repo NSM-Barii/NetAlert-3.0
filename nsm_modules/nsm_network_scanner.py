@@ -151,7 +151,7 @@ class Network_Scanner():
 
                     # ALERT THE USER
                     if verbose:
-                        console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}")
+                        console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
 
 
                     # TRACK DEVICE CONNECTION STATUS
@@ -169,6 +169,11 @@ class Network_Scanner():
     @classmethod
     def node_tracker(cls, target_ip, target_mac, host, vendor, timeout=5, verbose=0):
         """This method will be responsible for tracking node connection status"""
+
+
+
+        # FOR TESTING
+        #console.print(f"[bold red][+][bold yellow] --> {target_ip}")
 
 
         # SET VARS
@@ -330,10 +335,10 @@ class Network_Scanner():
 
                 # PRINT
                 console.print("Succesfully warned the user")
-
+    
 
     @classmethod
-    def main(cls, type="gui"):
+    def main(cls, ui, iface, subnet):
         """This will be responsible for performing class wide logic"""
 
 
@@ -346,37 +351,26 @@ class Network_Scanner():
 
 
 
-
-        # GET IFACE
-        iface = Utilities.get_interface()
-        time.sleep(1)
-
-
         # USE THIS FOR CLI 
-        if type == "cli":
-            Network_Scanner.controller(iface=iface, target="192.168.1.0/24", test=True)
+        if ui == "cli":
+
+            # DISCLAMER
+            console.print("[bold red]DISCLAMER:[bold yellow] cli mode is still under construction")
+
+
+            # RUN
+            Network_Scanner.controller(iface=iface, target="192.168.1.0/24", test=False)
 
 
         # USE THIS FOR GUI 
-        elif type == "gui":
+        elif ui == "gui":
 
 
             # START ARP SCAN
-            threading.Thread(target=Network_Scanner.subnet_scanner, args=(iface, ), daemon=True).start()
-            console.print("[bold red][+][bold yellow] Thread 1 started")
+            threading.Thread(target=Network_Scanner.subnet_scanner, args=(iface, subnet), daemon=True).start()
+            console.print("[bold red][+][bold yellow] Background Thread 2 started")
             
 
-            # START SUMMARY COUNT
-            threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
-            console.print("[bold red][+][bold yellow] Thread 2 started")
-            
-
-            # TELL
-            time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
-            console.print(f"GUI Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
-
-            while True:
-                pass
 
 
 

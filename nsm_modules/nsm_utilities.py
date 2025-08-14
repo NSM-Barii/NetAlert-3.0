@@ -12,6 +12,7 @@ console = Console()
 
 # NETWORK IMPORTS
 import socket, requests, manuf
+from scapy.all import sniff
 
 
 # ETC IMPORTS
@@ -42,7 +43,131 @@ class Utilities():
 
     def __init__(self):
         pass
-    
+
+
+
+    @staticmethod
+    def get_subnet():
+        """This method will be responsible for getting a valid subnet"""
+
+
+
+        try:
+            # SET DEFAULT IFACE IF AVAILABLE
+            data = File_Handling.get_json()
+            def_subnet = data['subnet']
+
+
+            # GIVE OPTION FOR DEFAULT
+            if def_subnet != "":
+                use = f"or press enter for {def_subnet}"
+            
+            else:
+                use = ""
+
+            
+            
+            subnet = console.input(f"[bold blue]Enter subnet {use}: ").strip()
+            
+
+            # NEED SOME TYPE OF IFACE
+            if subnet == "" and def_subnet == "":
+
+                console.print("You must enter subnet to procced silly", style="bold red")
+
+            
+            # ROLL BACK TO DEFAUT
+            elif subnet == "":
+                subnet = def_subnet
+
+                return subnet
+            
+
+            
+            # SET NEW DEF IFACE
+            else:
+                data['subnet'] = subnet
+                
+                # NOW TO UPDATE SETTINGS
+                File_Handling.push_json(data=data)
+
+                return subnet
+            
+
+        # ERROR 
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[yello] {e}")
+
+
+    @classmethod
+    def gui_or_cli(cls):
+        """This method will be responsible for the user choosing between cli or gui"""
+
+
+        # COLORS
+        c1 = "bold red"
+        c2 = "bold yellow"
+        c3 = "bold blue"
+        c4 = "bold green"
+
+
+        try:
+            
+            # GET INPUT
+            choice = console.input(f"[{c4}]Do you want to load[/{c4}] [{c2}]CLI or GUI?: ").strip().lower()
+
+
+            if choice in ["gui", "cli"]:
+
+                return choice
+            
+
+            # NOT VALID
+            console.print(f"False value given", style="bold red")
+
+            # EXIT
+            exit()
+
+        
+
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
+            # EXIT
+            exit()
+
+
+    @staticmethod
+    def get_valid_interface():
+        """This will be responsible for making sure the iface given works before procceding with further logic"""
+
+        
+        # LOOP 4 ERRORS
+        while True:
+
+
+            try:
+
+
+                # GET IFACE
+                iface = Utilities.get_interface()
+
+
+                # NOW TRY IT
+                sniff(iface=iface, timeout=0.1)
+
+
+                # RETURN VALID IFACE
+                return iface
+            
+
+            except Exception as e:
+                console.print(e, "\n")
+
+                
+                # EXIT PROGRAM
+                exit()
 
 
     @classmethod
@@ -373,11 +498,12 @@ if __name__ == "__main__":
     
 
     # SET
-    use = 1
+    use = 2
 
 
     if use == 1:
-        Utilities.web_server()
+        mac = "28:94:01:6f:7f:ee"
+        console.print(Utilities.get_vendor(mac=mac))
 
 
     elif use == 2:
