@@ -43,7 +43,7 @@ class Connection_Handler():
 
     
     @staticmethod
-    def get_conn_status(verbose=False):
+    def get_conn_status(verbose=True):
         """This method will be a blocking method for if the user is online or not"""
 
 
@@ -262,7 +262,7 @@ class Connection_Handler():
 
                     return local_ip
                
-                return False
+                return "0.0.0.0"
 
         
 
@@ -273,10 +273,6 @@ class Connection_Handler():
         except Exception as e:
             console.print(f"[bold red]Exception Error:[bold yellow] {e}")
             
-
-
-
-
 
 
 class Utilities():
@@ -364,6 +360,10 @@ class Utilities():
             if choice in ["gui", "cli"]:
 
                 return choice
+            
+            elif choice in ["1", ""]:
+
+                return "gui"
             
 
             # NOT VALID

@@ -108,7 +108,7 @@ class Network_Scanner():
 
 
     @classmethod
-    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=True):
+    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=False):
         """This will perform a ARP scan"""
 
 
@@ -153,7 +153,7 @@ class Network_Scanner():
 
                         # ALERT THE USER
                         if verbose:
-                            console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
+                            console.print(f"[{c1}][+] Found Node:[{c3}] {target_ip}")  # [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
 
 
                         # TRACK DEVICE CONNECTION STATUS

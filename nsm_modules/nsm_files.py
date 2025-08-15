@@ -9,7 +9,7 @@ from rich.table import Table
 from rich.live import Live
 from rich.console import Console
 console = Console()
-
+import http.client
 
 # ETC IMPORTS
 import os, time, threading
@@ -47,7 +47,9 @@ class File_Handling():
             USER_HOME = Path(os.getenv("SUDO_USER") and f"/home/{os.getenv('SUDO_USER')}") or Path.home()
             cls.base_dir = USER_HOME / "Documents" / "nsm_tools" / ".data" / "netalert3"
         except Exception as e:
-            console.print(e)
+
+            if verbose:
+                console.print(e)
             
             # SWITCH BACK TO PATH
             cls.base_dir= Path.home() / "Documents" / "nsm_tools" / ".data" / "netalert3"
@@ -435,7 +437,21 @@ class Push_Network_Status():
                     path = cls.base_dir / "nodes.json"
 
                     with open(path, "w") as file:
-                        json.dump(data, file, indent=4)
+
+                        while True:
+                            
+                            
+                            # LOCK IT
+                            LOCK.acquire()
+       
+                            json.dump(data, file, indent=4)
+                            
+                            # RELEASE IT 
+                            LOCK.release()
+
+                            break
+
+
 
 
                     if verbose:
@@ -479,7 +495,18 @@ class Push_Network_Status():
 
 
                 with open(path, "w") as file:
-                    json.dump(data, file, indent=4)
+
+                    while True:
+                        
+                        # LOCK IT
+                        LOCK.acquire()
+
+                        json.dump(data, file, indent=4)
+                        
+                        # RELEASE IT
+                        LOCK.release()
+
+                        break
 
 
                     if verbose:
@@ -493,9 +520,6 @@ class Push_Network_Status():
                 console.print(f"[bold red]push_device_info - Exception Error:[bold yellow] {e}")
 
                 break
-
-            
-        
 
     
     @classmethod

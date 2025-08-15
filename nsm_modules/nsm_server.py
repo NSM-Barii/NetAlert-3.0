@@ -26,6 +26,10 @@ class Server():
 
         local_ip = Connection_Handler.get_local_ip(iface=iface)
 
+        #local_ip = console.input("Enter local ip: ") if local_ip == "0.0.0.0" else local_ip
+
+        local_ip = "192.168.1.49"
+ 
 
         # START
         console.print(f"Running front end on: {local_ip}/{port}")
