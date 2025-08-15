@@ -9,3 +9,4 @@ pandas
 numpy
 gtts
 pyttsx3
+ifcfg
