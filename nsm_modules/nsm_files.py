@@ -391,7 +391,7 @@ class Push_Network_Status():
 
         
         # PUSH IP, MAC, HOST, VENDOR
-        if summary == False:
+        if  target_ip:
             data["nodes"][target_ip] = {
                     "target_ip": target_ip,
                     "target_mac": target_mac,
@@ -399,10 +399,19 @@ class Push_Network_Status():
                     "vendor": vendor,
                     "status": status
                 }
+            
         
         # PUSH SUMMARY
-        else:
+        elif summary:
             data["summary"] = summary 
+
+
+
+        else:
+            data['summary'] = {}
+            data["nodes"] = {}
+
+            console.print("cleaned")
 
 
 

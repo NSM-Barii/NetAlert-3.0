@@ -27,7 +27,7 @@ import pandas as pd, numpy, sqlite3
 
 
 # NSM IMPORTS
-from nsm_utilities import Utilities
+from nsm_utilities import Utilities, Connection_Handler
 from nsm_network_sniffer import Network_Sniffer
 from nsm_files import File_Handling, Push_Network_Status
 
@@ -108,7 +108,7 @@ class Network_Scanner():
 
 
     @classmethod
-    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=False):
+    def subnet_scanner(cls, iface, target="192.168.1.0/24", verbose=True):
         """This will perform a ARP scan"""
 
 
@@ -121,50 +121,65 @@ class Network_Scanner():
 
         while cls.SNIFF:
 
-            arp = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(target))
+            try:
+
+                arp = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(target))
 
 
-            response = srp(arp, iface=iface, timeout=5, verbose=0)[0]
-        
-
-
-            for sent, recv in response:
-
-                target_ip = recv.psrc
-                target_mac = recv.hwsrc
-
-
-                if target_ip not in cls.subnet_devices:
-
-
-                    # GET HOST
-                    host = Utilities.get_host(target_ip=target_ip)
-
-
-                    # GET VENDOR
-                    vendor = Utilities.get_vendor(mac=target_mac)
-                    
-                    
-                    # APPEND TO LIST
-                    cls.subnet_devices.append(target_ip)
-                
-
-                    # ALERT THE USER
-                    if verbose:
-                        console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
-
-
-                    # TRACK DEVICE CONNECTION STATUS
-                    threading.Thread(target=Network_Scanner.node_tracker, args=(target_ip, target_mac, host, vendor ), daemon=True).start()
-        
-
+                response = srp(arp, iface=iface, timeout=5, verbose=0)[0]
             
-            # NOW WAIT UNTIL NEXT SCAN
-            num += 1
-            if verbose:
-                console.print(f"Loop #{num}", style="bold red")
-            time.sleep(cls.scan_delay)
+
+
+                for sent, recv in response:
+
+                    target_ip = recv.psrc
+                    target_mac = recv.hwsrc
+
+
+                    if target_ip not in cls.subnet_devices:
+
+
+                        # GET HOST
+                        host = Utilities.get_host(target_ip=target_ip)
+
+
+                        # GET VENDOR
+                        vendor = Utilities.get_vendor(mac=target_mac)
+                        
+                        
+                        # APPEND TO LIST
+                        cls.subnet_devices.append(target_ip)
+                    
+
+                        # ALERT THE USER
+                        if verbose:
+                            console.print(f"[{c1}][+] [{c2}]Found Node:[/{c2}] {target_ip} [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
+
+
+                        # TRACK DEVICE CONNECTION STATUS
+                        threading.Thread(target=Connection_Handler.status_checker, args=(target_ip, target_mac, host, vendor, iface), daemon=True).start()
+            
+
+                
+                # NOW WAIT UNTIL NEXT SCAN
+                num += 1
+                if verbose:
+                    console.print(f"Loop #{num}", style="bold red")
+                time.sleep(cls.scan_delay)
+            
+
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+                
+                # RE-ESTABLISH CONNECTION
+                Connection_Handler.establish_reconnection(verbose=False)
+
+
+                # IN CASE OF DIFFERENT ERROR
+                time.sleep(5)
         
+
 
     @classmethod
     def node_tracker(cls, target_ip, target_mac, host, vendor, timeout=5, verbose=0):
@@ -190,11 +205,6 @@ class Network_Scanner():
         c2 = "bold green"
         c3 = "bold yellow"
         c4 = "bold purple"
-
-
-
-        # START THE RATE LIMITER
-        #threading.Thread(target=Network_Scanner.rate_limiter, args=(target_ip, ), daemon=True).start()
 
 
 
@@ -225,15 +235,6 @@ class Network_Scanner():
                     if verbose:
                         console.print(f"[{c1}][+][/{c1}] Node Online: [{c3}]{target_ip} ")
 
-
-                    
-                    # UPDATE CLS STATUS
-                    #if first:
-                       # first = False
-                      #  console.print("online -> 1")
-                   # else:
-                    #cls.nodes_online += 1
-                     #   console.print("online -> 2")
 
                     # PUSH STATUS
                     Push_Network_Status.push_device_info(
@@ -301,7 +302,31 @@ class Network_Scanner():
             
 
             except Exception as e:
-                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+                if verbose:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
+                # REMOVE FROM LIST
+                cls.subnet_devices.remove(target_ip)
+
+
+                # PUSH STATUS
+                Push_Network_Status.push_device_info(
+                    
+                    target_ip=target_ip,
+                    target_mac=target_mac,
+                    host=host,
+                    vendor=vendor,
+                    status="offline",
+                    verbose=False
+                    
+                    )
+
+                console.print(f"[-][bold red] Killed Thread:[bold yellow] {target_ip}")
+
+
+                break
     
     
     @classmethod
@@ -344,7 +369,7 @@ class Network_Scanner():
 
         # SET VARS
         cls.SNIFF = True
-        cls.scan_delay = 20
+        cls.scan_delay = 5
         cls.subnet_devices = []
         cls.nodes_online = 0
         cls.nodes_offline = 0

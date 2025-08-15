@@ -10,8 +10,8 @@ from rich.console import Console
 
 
 # NSM IMPORTS
-from nsm_files import Push_Network_Status
-from nsm_utilities import Utilities
+from nsm_files import Push_Network_Status, File_Handling
+from nsm_utilities import Utilities, Connection_Handler
 from nsm_network_scanner import Network_Scanner
 from nsm_network_scanner import Network_Sniffer
 from nsm_server import Server
@@ -35,50 +35,56 @@ class Main():
     @classmethod
     def run(cls):
           """Start here"""
-
-
+          
           try:
-
-
-                # GET IFACE
-                iface = Utilities.get_valid_interface()
-
-
-                # GET SUBNET
-                subnet = Utilities.get_subnet()
-
-
-                # IF THAT WORKS PROCEED
-                ui = Utilities.gui_or_cli()
-
-
-                # TELL
-                time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
-                console.print(f"\n{ui.upper()} Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
-
-
-                # START SUMMARY COUNT
-                threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
-                console.print("[bold red][+][bold yellow] Background Thread 1 started")
                 
+                # GET CONN STATUS
+                  if Connection_Handler.get_conn_status():
 
 
-                # START NETWORK SCANER
-                Network_Scanner.main(ui=ui, iface=iface, subnet=subnet)
+                        # GET IFACE
+                        iface = Utilities.get_valid_interface()
 
 
-                # START NETWORK SNIFFER
-                #Network_Sniffer.main(ui=ui, iface=iface)
+                        # GET SUBNET
+                        subnet = Utilities.get_subnet()
 
 
-                # RUN FRONT END GUI
-                time.sleep(0.2)
-                Server.begin_web_server()
+                        # IF THAT WORKS PROCEED
+                        ui = Utilities.gui_or_cli()
+
+
+                        # CLEANSE JSON
+                        Push_Network_Status.push_device_info()
+
+
+                        # TELL
+                        time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
+                        console.print(f"\n{ui.upper()} Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
+
+
+                        # START SUMMARY COUNT
+                        threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
+                        console.print("[bold red][+][bold yellow] Background Thread 1 started")
+                        
+
+
+                        # START NETWORK SCANER
+                        Network_Scanner.main(ui=ui, iface=iface, subnet=subnet)
+
+
+                        # START NETWORK SNIFFER
+                        #Network_Sniffer.main(ui=ui, iface=iface)
+
+
+                        # RUN FRONT END GUI
+                        time.sleep(0.2)
+                        Server.begin_web_server(iface=iface)
 
 
 
-                while True:
-                  pass
+                        while True:
+                              pass
 
 
 

@@ -11,12 +11,12 @@ console = Console()
 
 
 # NETWORK IMPORTS
-import socket, requests, manuf
-from scapy.all import sniff
+import socket, requests, manuf, ifcfg
+from scapy.all import sniff, ARP, IP, ICMP, srp, Ether
 
 
 # ETC IMPORTS
-import sqlite3, os, threading, time
+import sqlite3, os, threading, time, random
 from datetime import datetime
 
 
@@ -27,10 +27,255 @@ import pyttsx3
 
 
 # NSM IMPORTS
-from nsm_files import File_Handling
+from nsm_files import File_Handling, Push_Network_Status
 
 
 LOCK = threading.Lock()
+
+
+
+class Connection_Handler():
+    """This module will house connection orientated methods"""
+
+    def __init__(self):
+        pass
+
+
+    
+    @staticmethod
+    def get_conn_status(verbose=False):
+        """This method will be a blocking method for if the user is online or not"""
+
+
+        # MULTIPLE OPTIONS IN CASE ONE IS DOWN OR CANT BE REACHED FOR CERTAIN REASONS
+        domains = ["google.com", "cloudflare.com", "github.com", "wikipedia.org", ]
+
+
+        try:
+
+            host = socket.gethostbyname(random.choice(domains))
+
+            if host:
+                
+                if verbose:
+                    console.print(f"[bold blue]Connection Status:[bold green] ONLINE")
+                
+                return True
+            
+            
+            console.print(f"[bold blue]Connection Status:[bold red] OFFLINE")
+            return False
+        
+
+
+        except Exception as e:
+
+            # OUTPUT
+            if verbose:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                console.print(f"[bold blue]Connection Status:[bold red] OFFLINE")
+
+
+            return False
+
+    
+
+    @staticmethod
+    def establish_reconnection(verbose=False):
+        """This method will be called upon if there is a connection interruption"""
+
+
+        # CHECK DELAY
+        delay = False
+
+
+        while True:
+            
+            if delay:
+                time.sleep(delay)
+
+            try:
+
+                status = Connection_Handler.get_conn_status(verbose=False)
+
+
+                if status:
+
+                    console.print(f"Connection Status back online  -  Resuming program!", style="bold green")
+
+                    
+                    # RESUME PROGRAM
+                    return True
+                
+
+                else:
+                    
+                    if verbose:
+                        console.print(f"Connection status still offline", style="bold red")
+
+                    delay = 3
+            
+
+            except Exception as e:
+
+                if verbose:
+                    console.print(f"Connection status still offline  -  {e}", style="bold red")
+
+                delay = 3
+
+
+    
+    @classmethod
+    def status_checker(cls, target_ip, target_mac, host, vendor, iface):
+        """This method will be responsible for monitroing the connection status of the target_ip"""
+
+
+        # VARS
+        verbose = False
+        delay = 1.5
+        timeout = 0.5
+        online = 0
+        count = 0
+
+
+        # COLORS
+        c1 = "bold red"
+        c2 = "bold blue"
+        c3 = "bold purple"
+        c4 = "bold yellow"
+
+
+        # PACKETS
+        arp = Ether(dst=target_mac) / ARP(pdst=target_ip)
+        ping = IP(dst=target_ip) / ICMP()
+
+
+
+        while True:
+
+            # APPEND
+            count += 1
+
+            # GET
+            response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+
+
+            # IF NOW ONLINE
+            if response and not online:
+                
+                # UPDATE
+                online = True
+                timeout = 0.5
+                count = 0
+
+
+                if verbose:
+                    console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
+
+
+                # PUSH STATUS
+                Push_Network_Status.push_device_info(
+                    
+                    target_ip=target_ip,
+                    target_mac=target_mac,
+                    host=host,
+                    vendor=vendor,
+                    status="online"
+                    
+                    )
+                
+                
+                # DELAY
+                time.sleep(delay)
+            
+
+            # STILL ONLINE
+            elif response:
+
+                if verbose:
+                    console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
+
+
+                # DELAY
+                time.sleep(delay)
+
+            
+
+            # NOW OFFLINE
+            elif count > 4:
+
+                # PUSH STATUS
+                Push_Network_Status.push_device_info(
+                    
+                    target_ip=target_ip,
+                    target_mac=target_mac,
+                    host=host,
+                    vendor=vendor,
+                    status="offline"
+                    
+                    )
+                
+
+                # OFFLINE
+                online = False
+                
+
+                # DELAY
+                time.sleep(delay)
+            
+
+            
+            # RE-TRY ARP
+            else:
+
+                count += 1
+                timeout += 0.5
+
+
+                time.sleep(0.1)
+            
+            
+    @staticmethod
+    def get_local_ip(iface, verbose=True):
+        """This method will be responsible for getting local ip"""
+
+
+
+
+        try:
+
+
+            interfaces = ifcfg.interfaces()
+
+
+            for key, value in interfaces.items():
+
+               # console.print(f"{key} {value}")
+                # IFACE & IPV4
+                interface = key
+                local_ip = value['inet'] 
+
+                console.print(f"Interface: {iface}  -  Local IP: {local_ip}")
+
+                if iface.strip() == interface:
+                    console.print(f"Found you: {key}  -  {local_ip}")
+
+                    return local_ip
+               
+                return False
+
+        
+
+        except (socket.gaierror) as e:
+            console.print(f"[bold red]Socket Error:[bold yellow] {e}")
+        
+
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+            
+
+
+
 
 
 
@@ -45,7 +290,6 @@ class Utilities():
         pass
 
 
-
     @staticmethod
     def get_subnet():
         """This method will be responsible for getting a valid subnet"""
@@ -54,7 +298,7 @@ class Utilities():
 
         try:
             # SET DEFAULT IFACE IF AVAILABLE
-            data = File_Handling.get_json()
+            data = File_Handling.get_json(verbose=False)
             def_subnet = data['subnet']
 
 
@@ -177,7 +421,7 @@ class Utilities():
         
         try:
             # SET DEFAULT IFACE IF AVAILABLE
-            data = File_Handling.get_json()
+            data = File_Handling.get_json(verbose=False)
             def_iface = data['iface']
 
 
@@ -221,7 +465,6 @@ class Utilities():
         except Exception as e:
             console.print(f"[bold red]Exception Error:[yello] {e}")
     
-
 
     @staticmethod
     def get_host(target_ip, verbose=False):
@@ -498,12 +741,12 @@ if __name__ == "__main__":
     
 
     # SET
-    use = 2
+    use = 1
 
-
+    
     if use == 1:
-        mac = "28:94:01:6f:7f:ee"
-        console.print(Utilities.get_vendor(mac=mac))
+        mac = ""
+        Connection_Handler.get_local_ip(iface="wlan0")
 
 
     elif use == 2:
