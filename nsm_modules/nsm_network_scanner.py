@@ -152,8 +152,8 @@ class Network_Scanner():
                     
 
                         # ALERT THE USER
-                        if verbose:
-                            console.print(f"[{c1}][+] Found Node:[{c3}] {target_ip}")  # [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
+                        #if verbose:
+                        console.print(f"[{c1}][+] Found Node:[{c3}] {target_ip}")  # [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
 
 
                         # TRACK DEVICE CONNECTION STATUS
@@ -369,7 +369,7 @@ class Network_Scanner():
 
         # SET VARS
         cls.SNIFF = True
-        cls.scan_delay = 5
+        cls.scan_delay = 10
         cls.subnet_devices = []
         cls.nodes_online = 0
         cls.nodes_offline = 0

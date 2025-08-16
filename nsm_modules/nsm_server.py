@@ -36,4 +36,4 @@ class Server():
 
         
         # RUN SERVER
-        os.system(f'python -m http.server -b {local_ip} {port} -d {dir}')
+        os.system(f'python -m http.server -b {local_ip} {port} -d {dir} 2>/dev/null')

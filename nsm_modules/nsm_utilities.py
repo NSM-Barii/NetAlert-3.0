@@ -12,7 +12,8 @@ console = Console()
 
 # NETWORK IMPORTS
 import socket, requests, manuf, ifcfg
-from scapy.all import sniff, ARP, IP, ICMP, srp, Ether
+from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
+
 
 
 # ETC IMPORTS
@@ -30,6 +31,8 @@ import pyttsx3
 from nsm_files import File_Handling, Push_Network_Status
 
 
+
+conf.use_pcap = True
 LOCK = threading.Lock()
 
 
@@ -153,58 +156,105 @@ class Connection_Handler():
 
         while True:
 
-            # APPEND
-            count += 1
+            try:
 
-            # GET
-            response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+                # APPEND
+                count += 1
 
-
-            # IF NOW ONLINE
-            if response and not online:
-                
-                # UPDATE
-                online = True
-                timeout = 0.5
-                count = 0
-
-
-                if verbose:
-                    console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
-
-
-                # PUSH STATUS
-                Push_Network_Status.push_device_info(
+                # GET
+                with LOCK:
+                    response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
                     
-                    target_ip=target_ip,
-                    target_mac=target_mac,
-                    host=host,
-                    vendor=vendor,
-                    status="online"
+                    # DOUBLE CHECK
+                    if not response:
+                        response = sr1(ping, iface=iface, timeout=timeout)[0]
+
+
+                # IF NOW ONLINE
+                if response and not online:
                     
-                    )
+                    # UPDATE
+                    online = True
+                    timeout = 0.5
+                    count = 0
+
+
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
+
+
+                    # PUSH STATUS
+                    Push_Network_Status.push_device_info(
+                        
+                        target_ip=target_ip,
+                        target_mac=target_mac,
+                        host=host,
+                        vendor=vendor,
+                        status="online"
+                        
+                        )
+                    
+                    
+                    # DELAY
+                    time.sleep(delay)
                 
+
+                # STILL ONLINE
+                elif response:
+
+                    if verbose:
+                        console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
+
+
+                    # DELAY
+                    time.sleep(delay)
+
                 
-                # DELAY
-                time.sleep(delay)
+
+                # NOW OFFLINE
+                elif count > 4:
+
+                    # PUSH STATUS
+                    Push_Network_Status.push_device_info(
+                        
+                        target_ip=target_ip,
+                        target_mac=target_mac,
+                        host=host,
+                        vendor=vendor,
+                        status="offline"
+                        
+                        )
+                    
+
+                    # OFFLINE
+                    online = False
+                    
+
+                    # DELAY
+                    time.sleep(delay)
+                
+
+                
+                # RE-TRY ARP
+                else:
+
+                    count += 1
+                    timeout += 0.5
+
+
+                    time.sleep(0.1)
             
 
-            # STILL ONLINE
-            elif response:
-
-                if verbose:
-                    console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
+            except Exception as e:
+                console.print(e)
 
 
-                # DELAY
-                time.sleep(delay)
+                # REMOVE FROM LIST
+                from nsm_network_scanner import Network_Scanner
+                Network_Scanner.subnet_devices.remove(target_ip)
 
-            
 
-            # NOW OFFLINE
-            elif count > 4:
-
-                # PUSH STATUS
+                # SET OFFLINE (FOR NOW)
                 Push_Network_Status.push_device_info(
                     
                     target_ip=target_ip,
@@ -214,26 +264,15 @@ class Connection_Handler():
                     status="offline"
                     
                     )
+
+
+                # KILL THREAD
+                console.print(f"[bold red][-] Thread Killed:[bold yellow] {target_ip}")
+
+                break
+
                 
-
-                # OFFLINE
-                online = False
                 
-
-                # DELAY
-                time.sleep(delay)
-            
-
-            
-            # RE-TRY ARP
-            else:
-
-                count += 1
-                timeout += 0.5
-
-
-                time.sleep(0.1)
-            
             
     @staticmethod
     def get_local_ip(iface, verbose=True):
