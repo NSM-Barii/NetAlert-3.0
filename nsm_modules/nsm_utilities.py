@@ -166,8 +166,8 @@ class Connection_Handler():
                     response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
                     
                     # DOUBLE CHECK
-                    if not response:
-                        response = sr1(ping, iface=iface, timeout=timeout)[0]
+                    if response in [None, False]:
+                        response = sr1(ping, iface=iface, timeout=timeout, verbose=0)
 
 
                 # IF NOW ONLINE
@@ -212,7 +212,7 @@ class Connection_Handler():
                 
 
                 # NOW OFFLINE
-                elif count > 4:
+                elif count > 6:
 
                     # PUSH STATUS
                     Push_Network_Status.push_device_info(
