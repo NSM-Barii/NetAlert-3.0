@@ -1,4 +1,4 @@
 # THIS MODULE WILL SOLEY BE RESPONSIBLE FOR HOLDING PYTHON VERSION
 
 
-__version__ = "3.0.0"
+__version__ = "3.0.0" 
