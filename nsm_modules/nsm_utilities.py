@@ -359,7 +359,7 @@ class Connection_Handler():
             data = Push_Network_Status.get_device_info(verbose=False)
 
 
-            console.print(data)
+            #console.print(data)
 
             
             # GET VARS
