@@ -526,63 +526,76 @@ class Push_Network_Status():
     def get_network_summary(cls, delay=5, verbose=False):
         """This method will be responsible for updating the total amount of devices found and online"""
 
-        
+
         # VARS
         cls.nodes_online = 0
         cls.nodes_count = 0
         cls.nodes = []
 
+    
+        def begin(delay, verbose):
+
+ 
+            # PRINT
+            console.print("[bold red][+][bold yellow] Background Thread 1 started")
+
+            
+            # LOOP INDEFIENTLY
+            while True:
+
+                # RESET
+                cls.nodes_online = 0
+
+
+                # PULL DATA
+                data = Push_Network_Status.get_device_info(verbose=True)
+                
+
+                # ITER
+                for key, value in data["nodes"].items():
+
+                    
+                    if verbose:
+                        console.print(value["target_ip"]," --> ", value["status"])
+
+                    # GET VARS
+                    status = value["status"]
+                    target_ip = value["target_ip"]
+
+
+                    if status == "online":
+                        cls.nodes_online += 1
+                    
+                    
+                    
+                    # APPEND TOTAL COUNT
+                    if target_ip not in cls.nodes:
+
+                        # APPEND
+                        cls.nodes.append(target_ip)
+
+                        # ADD
+                        cls.nodes_count += 1
+                
+                
+                # SUMMARY
+                summary = {
+                    "nodes_online": cls.nodes_online,
+                    "nodes_total": cls.nodes_count
+                }
+                
+
+                # PUSH DATA
+                Push_Network_Status.push_device_info(summary=summary)
+                
+                # DELAY
+                time.sleep(delay)
+            
         
-        # LOOP INDEFIENTLY
-        while True:
 
-            # RESET
-            cls.nodes_online = 0
-
-
-            # PULL DATA
-            data = Push_Network_Status.get_device_info(verbose=True)
-            
-
-            # ITER
-            for key, value in data["nodes"].items():
-
-                
-                if verbose:
-                    console.print(value["target_ip"]," --> ", value["status"])
-
-                # GET VARS
-                status = value["status"]
-                target_ip = value["target_ip"]
-
-
-                if status == "online":
-                    cls.nodes_online += 1
-                
-                
-                
-                # APPEND TOTAL COUNT
-                if target_ip not in cls.nodes:
-
-                    # APPEND
-                    cls.nodes.append(target_ip)
-
-                    # ADD
-                    cls.nodes_count += 1
-            
-            
-            # SUMMARY
-            summary = {
-                "nodes_online": cls.nodes_online,
-                "nodes_total": cls.nodes_count
-            }
-            
-
-            # PUSH DATA
-            Push_Network_Status.push_device_info(summary=summary)
-            
-            # DELAY
-            time.sleep(delay)
+        # START
+        threading.Thread(target=begin, args=(5, False), daemon=True).start()
+        
 
 
 

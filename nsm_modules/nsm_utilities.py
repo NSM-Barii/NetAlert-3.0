@@ -184,15 +184,16 @@ class Connection_Handler():
 
 
                     # PUSH STATUS
-                    Push_Network_Status.push_device_info(
-                        
-                        target_ip=target_ip,
-                        target_mac=target_mac,
-                        host=host,
-                        vendor=vendor,
-                        status="online"
-                        
-                        )
+                    with LOCK:
+                        Push_Network_Status.push_device_info(
+                            
+                            target_ip=target_ip,
+                            target_mac=target_mac,
+                            host=host,
+                            vendor=vendor,
+                            status="online"
+                            
+                            )
                     
                     
                     # DELAY
@@ -215,15 +216,16 @@ class Connection_Handler():
                 elif count > 6:
 
                     # PUSH STATUS
-                    Push_Network_Status.push_device_info(
-                        
-                        target_ip=target_ip,
-                        target_mac=target_mac,
-                        host=host,
-                        vendor=vendor,
-                        status="offline"
-                        
-                        )
+                    with LOCK:
+                        Push_Network_Status.push_device_info(
+                            
+                            target_ip=target_ip,
+                            target_mac=target_mac,
+                            host=host,
+                            vendor=vendor,
+                            status="offline"
+                            
+                            )
                     
 
                     # OFFLINE
@@ -255,15 +257,16 @@ class Connection_Handler():
 
 
                 # SET OFFLINE (FOR NOW)
-                Push_Network_Status.push_device_info(
-                    
-                    target_ip=target_ip,
-                    target_mac=target_mac,
-                    host=host,
-                    vendor=vendor,
-                    status="offline"
-                    
-                    )
+                with LOCK:
+                    Push_Network_Status.push_device_info(
+                        
+                        target_ip=target_ip,
+                        target_mac=target_mac,
+                        host=host,
+                        vendor=vendor,
+                        status="offline"
+                        
+                        )
 
 
                 # KILL THREAD
@@ -275,42 +278,60 @@ class Connection_Handler():
                 
             
     @staticmethod
-    def get_local_ip(iface, verbose=True):
+    def get_local_ip(iface=False, verbose=True):
         """This method will be responsible for getting local ip"""
 
 
 
 
         try:
+            # SET DEFAULT IFACE IF AVAILABLE
+            data = File_Handling.get_json(verbose=False)
+            def_local_ip = data['local_ip']
 
 
-            interfaces = ifcfg.interfaces()
+            # GIVE OPTION FOR DEFAULT
+            if def_local_ip != "":
+                use = f"or press enter for {def_local_ip}"
+            
+            else:
+                use = ""
 
+            
+            
+            local_ip = console.input(f"[bold blue]Enter your local IP {use}: ").strip()
+            
 
-            for key, value in interfaces.items():
+            # NEED SOME TYPE OF IFACE
+            if local_ip == "" and def_local_ip == "":
 
-               # console.print(f"{key} {value}")
-                # IFACE & IPV4
-                interface = key
-                local_ip = value['inet'] 
+                console.print("You must enter subnet to procced silly", style="bold red")
 
-                console.print(f"Interface: {iface}  -  Local IP: {local_ip}")
+            
+            # ROLL BACK TO DEFAUT
+            elif local_ip == "":
+                local_ip = def_local_ip
 
-                if iface.strip() == interface:
-                    console.print(f"Found you: {key}  -  {local_ip}")
+                return local_ip
+            
 
-                    return local_ip
-               
-                return "0.0.0.0"
+            
+            # SET NEW DEF IFACE
+            else:
+                data['local_ip'] = local_ip
+                
+                # NOW TO UPDATE SETTINGS
+                File_Handling.push_json(data=data)
 
-        
+                return local_ip
+            
 
-        except (socket.gaierror) as e:
-            console.print(f"[bold red]Socket Error:[bold yellow] {e}")
-        
-
+        # ERROR 
         except Exception as e:
-            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+            console.print(f"[bold red]Exception Error:[yello] {e}")
+
+            # EXIT PROGRAM
+            exit()
             
 
 
@@ -323,6 +344,16 @@ class Utilities():
 
     def __init__(self):
         pass
+    
+
+
+    @staticmethod
+    def get_time_stamp(ui):
+        """This lets you know the terminal is started"""
+
+        time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
+        console.print(f"\n{ui.upper()} Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
+
 
 
     @staticmethod

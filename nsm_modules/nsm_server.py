@@ -11,7 +11,7 @@ from nsm_utilities import Connection_Handler
 
 
 # IMPORTS
-import os, socket
+import os, socket, time
 
 
 class Server():
@@ -20,15 +20,18 @@ class Server():
 
     
     @staticmethod
-    def begin_web_server(iface, port=8888, dir="../web_modules"):
+    def begin_web_server(local_ip, iface=False, port=8888, dir="../web_modules"):
         """Use this to start front end server"""
 
 
-        local_ip = Connection_Handler.get_local_ip(iface=iface)
+        time.sleep(0.2)
+
+
+        #local_ip = Connection_Handler.get_local_ip(iface=iface)
 
         #local_ip = console.input("Enter local ip: ") if local_ip == "0.0.0.0" else local_ip
 
-        local_ip = "192.168.1.49"
+        #local_ip = "192.168.1.49"
  
 
         # START

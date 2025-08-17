@@ -50,24 +50,25 @@ class Main():
                         subnet = Utilities.get_subnet()
 
 
-                        # IF THAT WORKS PROCEED
+                        # GET UI
                         ui = Utilities.gui_or_cli()
+
+
+                        # GET LOCAL IP
+                        local_ip = Connection_Handler.get_local_ip()
 
 
                         # CLEANSE JSON
                         Push_Network_Status.push_device_info()
 
 
-                        # TELL
-                        time_stamp = datetime.now().strftime("%m/%d/%Y - %H:%M:%S")
-                        console.print(f"\n{ui.upper()} Mode Activated  -  Timestamp: {time_stamp}", style="bold green")
+                        # TIMESTAMP IT
+                        Utilities.get_time_stamp(ui=ui)
 
 
                         # START SUMMARY COUNT
-                        threading.Thread(target=Push_Network_Status.get_network_summary, args=(5, False), daemon=True).start()
-                        console.print("[bold red][+][bold yellow] Background Thread 1 started")
+                        Push_Network_Status.get_network_summary()
                         
-
 
                         # START NETWORK SCANER
                         Network_Scanner.main(ui=ui, iface=iface, subnet=subnet)
@@ -78,8 +79,7 @@ class Main():
 
 
                         # RUN FRONT END GUI
-                        time.sleep(0.2)
-                        Server.begin_web_server(iface=iface)
+                        Server.begin_web_server(iface=iface, local_ip=local_ip)
 
 
 
