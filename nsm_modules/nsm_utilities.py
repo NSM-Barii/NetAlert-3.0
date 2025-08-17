@@ -348,12 +348,12 @@ class Connection_Handler():
 
         
         # GET CURRENT TIME STAMP AND SEE IF IT MATCHES TRIGGER
-        time_now = datetime.now().strftime("%H:%M")
+        time_now = datetime.now().strftime("%H") #:%M")
 
         
 
         # MORNING UPDATE
-        if time_now == "04:04":
+        if time_now == "09:":
 
             # PULL DATA
             data = Push_Network_Status.get_device_info(verbose=False)
