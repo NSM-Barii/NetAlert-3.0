@@ -16,5 +16,5 @@ branch = "main"
 tag_format = "v{version}"
 changelog_file = "CHANGELOG.md"
 upload_to_release = true
-commit_parser = "semantic_release.history.conventional_commits.parser"
+commit_parser = "angular"   # ✅ fixed
 upload_to_pypi = false
