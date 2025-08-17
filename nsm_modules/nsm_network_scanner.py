@@ -180,7 +180,6 @@ class Network_Scanner():
                 time.sleep(5)
         
 
-
     @classmethod
     def node_tracker(cls, target_ip, target_mac, host, vendor, timeout=5, verbose=0):
         """This method will be responsible for tracking node connection status"""

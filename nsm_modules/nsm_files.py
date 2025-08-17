@@ -21,6 +21,8 @@ from pathlib import Path
 import json
 
 
+
+
 # SAFE FILE HANLDING
 LOCK = threading.Lock()
 
@@ -63,9 +65,7 @@ class File_Handling():
             #console.print("returning", style="bold red")
             
             return cls.base_dir
-
-        
-            
+           
 
     @classmethod
     def path_for_sql(cls, get=False):
@@ -94,7 +94,7 @@ class File_Handling():
 
 
     @classmethod
-    def get_json(cls, verbose=True):
+    def get_json(cls, type="settings", verbose=True):
         """This will pull and return json info"""
 
 
@@ -111,7 +111,11 @@ class File_Handling():
 
 
                     # MAKE SETTINGS
-                    path = cls.base_dir / "settings.json"
+                    if type in ["settings", 1]:
+                        path = cls.base_dir / "settings.json"
+                    elif type in ["api", 2]:
+                        path = cls.base_dir / "api_keys.json"
+
 
 
                     with open(path, "r") as file:
@@ -122,7 +126,7 @@ class File_Handling():
                         if verbose:
                             console.print(f"Successfully Pulled settings.json from {path}", style="bold green")
 
-
+                    #console.print(settings)
                     return settings
                 
 
@@ -149,12 +153,21 @@ class File_Handling():
 
                 
                 # CREATE VARS
-                path = cls.base_dir / "settings.json"
-                data = {
-                        "iface": "",
-                        "subnet": "",
-                        "captures": ""
-                    }
+                if type in ["settings", 1]:
+                    path = cls.base_dir / "settings.json"
+                    data = {
+                            "iface": "",
+                            "subnet": "",
+                            "local_ip": "",
+                            "captures": ""
+                        }
+                
+                elif type in ["api", 2]:
+                    path = cls.base_dir / "api_keys.json"
+                    data = {
+                            "api_key_discord": ""
+                        }
+
 
 
                 # PUSH IT 
@@ -177,7 +190,7 @@ class File_Handling():
 
 
     @classmethod
-    def push_json(cls, data, verbose=True):
+    def push_json(cls, data, type="settings", verbose=True):
         """This method will be used to push info to settings.json"""
 
 
@@ -198,8 +211,15 @@ class File_Handling():
                 if cls.base_dir.exists():
                     
 
-                    # VARS
-                    path = cls.base_dir / "settings.json"
+                    # CREATE VARS
+                    if type in ["settings", 1]:
+                        path = cls.base_dir / "settings.json"
+
+                    
+                    elif type in ["api", 2]:
+                        path = cls.base_dir / "api_keys.json"
+
+
 
                     with open(path, "w") as file:
 
@@ -239,12 +259,20 @@ class File_Handling():
 
                 
                 # CREATE VARS
-                path = cls.base_dir / "settings.json"
-                data = {
-                        "iface": "",
-                        "subnet": "",
-                        "captures": ""
-                    }
+                if type in ["settings", 1]:
+                    path = cls.base_dir / "settings.json"
+                    data = {
+                            "iface": "",
+                            "subnet": "",
+                            "local_ip": "",
+                            "captures": ""
+                        }
+                
+                elif type in ["api", 2]:
+                    path = cls.base_dir / "api_keys.json"
+                    data = {
+                            "api_key_discord": ""
+                        }
 
 
                 # PUSH IT 
@@ -535,6 +563,10 @@ class Push_Network_Status():
     
         def begin(delay, verbose):
 
+
+            # IMPORT
+            from nsm_utilities import Connection_Handler
+
  
             # PRINT
             console.print("[bold red][+][bold yellow] Background Thread 1 started")
@@ -542,6 +574,10 @@ class Push_Network_Status():
             
             # LOOP INDEFIENTLY
             while True:
+
+
+                # CHECK FOR UPDATES
+                Connection_Handler.daily_update()
 
                 # RESET
                 cls.nodes_online = 0

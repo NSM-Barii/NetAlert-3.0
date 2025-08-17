@@ -17,8 +17,8 @@ from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
 
 
 # ETC IMPORTS
-import sqlite3, os, threading, time, random
-from datetime import datetime
+import sqlite3, os, threading, time, random, json
+from datetime import datetime, timedelta
 
 
 # VOICE 
@@ -81,7 +81,6 @@ class Connection_Handler():
 
             return False
 
-    
 
     @staticmethod
     def establish_reconnection(verbose=False):
@@ -125,7 +124,6 @@ class Connection_Handler():
                     console.print(f"Connection status still offline  -  {e}", style="bold red")
 
                 delay = 3
-
 
     
     @classmethod
@@ -274,8 +272,6 @@ class Connection_Handler():
 
                 break
 
-                
-                
             
     @staticmethod
     def get_local_ip(iface=False, verbose=True):
@@ -321,7 +317,7 @@ class Connection_Handler():
                 data['local_ip'] = local_ip
                 
                 # NOW TO UPDATE SETTINGS
-                File_Handling.push_json(data=data)
+                File_Handling.push_json(data=data, verbose=False)
 
                 return local_ip
             
@@ -333,6 +329,110 @@ class Connection_Handler():
             # EXIT PROGRAM
             exit()
             
+    
+
+    @classmethod
+    def daily_update(cls, time_start=False):
+        """This method will be responsible for pushing daily updates to discord of network health"""
+
+
+        # VARS
+        triggers = [""]
+        
+        
+        # SET TIME
+        if time_start:
+            cls.time_start = time_start
+
+            return
+
+        
+        # GET CURRENT TIME STAMP AND SEE IF IT MATCHES TRIGGER
+        time_now = datetime.now().strftime("%H:%M")
+
+        
+
+        # MORNING UPDATE
+        if time_now == "04:04":
+
+            # PULL DATA
+            data = Push_Network_Status.get_device_info(verbose=False)
+
+
+            console.print(data)
+
+            
+            # GET VARS
+            nodes_online = data["summary"]["nodes_online"]
+            nodes_total = data["summary"]["nodes_total"]
+            nodes_offline = nodes_total - nodes_online
+            time_elapsed = str(timedelta(seconds=time.time() - cls.time_start)).split('.')[0]
+
+            notes = [
+                "Rise with power,  Bari",
+                "The network bows to you, Master  Bari",
+                "Awaken — destiny calls,  Bari",
+                "Good morning, Guardian of the Grid",
+                "Another day, another conquest,  Bari",
+                "System initialized —  Bari is online",
+                "The empire awaits its commander,  Bari",
+                "Grand awakening, Protector of Packets",
+                "Good energy uploaded, Bari",
+                "All systems stand ready for you,  Bari"
+            ]
+
+            notez = "Good Morning,   Grand Master Bari"
+
+
+            # THE MORNING NTE
+            LINE = "-" * 50
+            LINEE = "-" * 25
+            LINEEE = "-" * 34
+            morning = notez #random.choice(notes)
+            time_stamp = f"Timestamp: {datetime.now().strftime( "%m/%d/%Y - %H:%M:%S")}"
+            summary = f"Online Devices: {nodes_online}\nOffline Devices: {nodes_offline}\nTotal Devices: {nodes_total}"
+            program_elapsed_time = f"Total Program elapsed time: {time_elapsed}"
+
+
+            updatee = (
+                f"{LINE}\n"
+                f"{time_stamp}\n"
+                f"{LINE}\n\n"
+                f"{morning}\n\n"
+                f"{LINEE}\n"
+                f"{summary}\n"
+                f"{LINEE}\n\n"
+                f"{program_elapsed_time}\n"
+                f"{LINE}"
+            )
+            
+
+
+            # CREATE UPDATE
+            update = (
+                    f"{LINE}\n"
+                    f"{morning}\n\n"
+                    f"{LINEEE}\n"
+                    f"{time_stamp}\n"
+                    f"{LINEEE}\n\n"
+                    f"{LINEE}\n"
+                    f"{summary}\n"
+                    f"{LINEE}\n\n"
+                    f"{program_elapsed_time}\n"
+                    f"{LINE}"
+                    )
+            
+
+            # PUSH UPDATE
+            Utilities.push_to_discord(data=update)
+
+            
+
+        
+            # ADD A WAITING PERIOD SO THIS TRIGGER CAN PAST // BLOCKING FOR NOW
+            time.sleep(61)
+
+
 
 
 class Utilities():
@@ -344,7 +444,78 @@ class Utilities():
 
     def __init__(self):
         pass
+
+
+    @staticmethod
+    def clear_screen():
+        """This will be used for a smoother cleaner transition"""
+
+        if os.name == "posix":
+
+            os.system("clear")
+
+        
+        elif os.name == "nt":
+
+            os.system("cls")
+
     
+    @staticmethod
+    def push_to_discord(data, verbose=True):
+        """This method will be used to push (post)data info to discord"""
+
+
+        # VARS
+        count = 3
+        timeout = 3
+
+        
+        # GET API KEY
+        api_key = File_Handling.get_json(type=2, verbose=False)['api_key_discord']
+
+
+        # FORM DATA
+        headers = {"content-type": "application/json"}
+        payload = {"content": data}
+
+
+        while count > 0:
+
+            try:
+
+                response = requests.post(api_key, data=json.dumps(payload), headers=headers, timeout=timeout)
+
+
+                if response.status_code in [200, 204]:
+
+                    if verbose:
+
+                        console.print("[bold green][+] Discord push Successfull")
+
+                    
+                    break
+                
+
+                else:
+
+
+                    if verbose:
+                        
+                        console.print("[bold red][+] Discord push Failed")
+
+
+                    count =- 1
+                    timeout += 1
+            
+
+
+            except Exception as e:
+
+                if verbose:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                
+                count =- 1
+                timeout += 1
 
 
     @staticmethod
@@ -399,7 +570,7 @@ class Utilities():
                 data['subnet'] = subnet
                 
                 # NOW TO UPDATE SETTINGS
-                File_Handling.push_json(data=data)
+                File_Handling.push_json(data=data, verbose=False)
 
                 return subnet
             
@@ -503,33 +674,33 @@ class Utilities():
                 use = ""
 
             
-            while True:
-                iface = console.input(f"[bold blue]Enter iface {use}: ").strip()
-                
-
-                # NEED SOME TYPE OF IFACE
-                if iface == "" and def_iface == "":
-
-                    console.print("You must enter iface to procced silly", style="bold red")
-
-                
-                # ROLL BACK TO DEFAUT
-                elif iface == "":
-                    iface = def_iface
-
-                    return iface
-                
-
-                
-                # SET NEW DEF IFACE
-                else:
-                    data['iface'] = iface
-                    
-                    # NOW TO UPDATE SETTINGS
-                    File_Handling.push_json(data=data)
-
-                    return iface
+           
+            iface = console.input(f"[bold blue]Enter iface {use}: ").strip()
             
+
+            # NEED SOME TYPE OF IFACE
+            if iface == "" and def_iface == "":
+
+                console.print("You must enter iface to procced silly", style="bold red")
+
+            
+            # ROLL BACK TO DEFAUT
+            elif iface == "":
+                iface = def_iface
+
+                return iface
+            
+
+            
+            # SET NEW DEF IFACE
+            else:
+                data['iface'] = iface
+                
+                # NOW TO UPDATE SETTINGS
+                File_Handling.push_json(data=data, verbose=False)
+
+                return iface
+        
 
         # ERROR 
         except Exception as e:
@@ -816,7 +987,14 @@ if __name__ == "__main__":
     
     if use == 1:
         mac = ""
-        Connection_Handler.get_local_ip(iface="wlan0")
+     
+        Connection_Handler.daily_update(time_start=time.time())
+
+
+        time.sleep(2)
+
+        while True:
+            Connection_Handler.daily_update()
 
 
     elif use == 2:

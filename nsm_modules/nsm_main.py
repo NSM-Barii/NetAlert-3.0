@@ -41,6 +41,13 @@ class Main():
                 # GET CONN STATUS
                   if Connection_Handler.get_conn_status():
 
+                        # CLEAR SCREEN
+                        Utilities.clear_screen()
+
+
+                        # START PROGRAM ELAPSED TIME COUNTER
+                        Connection_Handler.daily_update(time_start=time.time())
+
 
                         # GET IFACE
                         iface = Utilities.get_valid_interface()
@@ -50,12 +57,12 @@ class Main():
                         subnet = Utilities.get_subnet()
 
 
-                        # GET UI
-                        ui = Utilities.gui_or_cli()
-
-
                         # GET LOCAL IP
                         local_ip = Connection_Handler.get_local_ip()
+
+
+                        # GET UI
+                        ui = Utilities.gui_or_cli()
 
 
                         # CLEANSE JSON
