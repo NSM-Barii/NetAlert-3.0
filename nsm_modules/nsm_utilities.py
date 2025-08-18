@@ -337,7 +337,8 @@ class Connection_Handler():
 
 
         # VARS
-        triggers = [""]
+        a1 = ["21", "33", "19"]
+        a2 = ["30", "0", "55"]
         
         
         # SET TIME
@@ -348,12 +349,14 @@ class Connection_Handler():
 
         
         # GET CURRENT TIME STAMP AND SEE IF IT MATCHES TRIGGER
-        time_now = datetime.now().strftime("%H") #:%M")
+        time_now = datetime.now().strftime("%H:%M")
+        t1 = time_now.split(":")[0]
+        t2 = time_now.split(":")[1]
 
-        
+
 
         # MORNING UPDATE
-        if time_now == "09:":
+        if t1 in a1 and t2 in a2:
 
             # PULL DATA
             data = Push_Network_Status.get_device_info(verbose=False)

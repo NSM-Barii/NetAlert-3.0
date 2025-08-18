@@ -441,7 +441,7 @@ class Push_Network_Status():
             data['summary'] = {}
             data["nodes"] = {}
 
-            console.print("cleaned")
+            #console.print("cleaned")
 
 
 
