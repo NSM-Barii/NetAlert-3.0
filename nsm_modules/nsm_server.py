@@ -35,8 +35,14 @@ class Server():
  
 
         # START
-        console.print(f"Running front end on: {local_ip}/{port}")
+        #console.print(f"Running front end on: {local_ip}/{port}")
 
         
         # RUN SERVER
-        os.system(f'python -m http.server -b {local_ip} {port} -d {dir} 2>/dev/null')
+        if os.name == "posix":
+            os.system(f"python3 -m http.server -b {local_ip} {port} -d {dir} 2>/dev/null")
+                    #{local_ip} {port} -d {dir} 2>/dev/null
+
+        # WINDOWS
+        else:
+            os.system(f"python -m http.server -d {dir}")

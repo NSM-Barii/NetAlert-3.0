@@ -145,6 +145,10 @@ class Network_Scanner():
 
                         # GET VENDOR
                         vendor = Utilities.get_vendor(mac=target_mac)
+
+
+                        # GET OS
+                        os = Utilities.get_os(target_ip=target_ip, verbose=1)
                         
                         
                         # APPEND TO LIST
@@ -376,10 +380,10 @@ class Network_Scanner():
 
 
         # USE THIS FOR CLI 
-        if ui == "cli":
+        if ui == "gui":
 
             # DISCLAMER
-            console.print("[bold red]DISCLAMER:[bold yellow] cli mode is still under construction")
+            console.print("[bold red]DISCLAMER:[bold yellow] GUI mode is still under construction")
 
 
             # RUN
@@ -387,7 +391,7 @@ class Network_Scanner():
 
 
         # USE THIS FOR GUI 
-        elif ui == "gui":
+        elif ui == "cli":
 
 
             # START ARP SCAN

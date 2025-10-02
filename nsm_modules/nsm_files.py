@@ -555,6 +555,10 @@ class Push_Network_Status():
         """This method will be responsible for updating the total amount of devices found and online"""
 
 
+        # FOR LEGACY WAY
+        leg = False
+
+
         # VARS
         cls.nodes_online = 0
         cls.nodes_count = 0
@@ -584,11 +588,16 @@ class Push_Network_Status():
 
 
                 # PULL DATA
-                data = Push_Network_Status.get_device_info(verbose=True)
+                if leg:
+                    data = Push_Network_Status.get_device_info(verbose=True)
+                
+                # NEW WAY
+                else:
+                    data = Connection_Handler.nodes
                 
 
                 # ITER
-                for key, value in data["nodes"].items():
+                for key, value in data.items():
 
                     
                     if verbose:
@@ -597,6 +606,9 @@ class Push_Network_Status():
                     # GET VARS
                     status = value["status"]
                     target_ip = value["target_ip"]
+                    target_mac = value["target_mac"]
+                    host = value["host"]
+                    vendor = value["vendor"]
 
 
                     if status == "online":
@@ -612,6 +624,16 @@ class Push_Network_Status():
 
                         # ADD
                         cls.nodes_count += 1
+                    
+
+                    # PUSH DEVICE INFO
+                    Push_Network_Status.push_device_info(
+                        target_ip=target_ip, 
+                        target_mac=target_mac,
+                        host=host,
+                        vendor=vendor,
+                        status=status
+                        )
                 
                 
                 # SUMMARY

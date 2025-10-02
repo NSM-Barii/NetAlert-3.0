@@ -13,6 +13,7 @@ console = Console()
 # NETWORK IMPORTS
 import socket, requests, manuf, ifcfg
 from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
+import nmap
 
 
 
@@ -39,6 +40,10 @@ LOCK = threading.Lock()
 
 class Connection_Handler():
     """This module will house connection orientated methods"""
+
+
+    # STORE LAN NODES DATA
+    nodes = {}
 
     def __init__(self):
         pass
@@ -131,6 +136,10 @@ class Connection_Handler():
         """This method will be responsible for monitroing the connection status of the target_ip"""
 
 
+        # LEGACY CONTROLLER
+        leg = False
+
+
         # VARS
         verbose = False
         delay = 1.5
@@ -181,17 +190,29 @@ class Connection_Handler():
                         console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
 
 
+                    
+                    # NEW WAY
+                    cls.nodes[target_ip] = {
+                        "target_ip": target_ip,
+                        "target_mac": target_mac,
+                        "host": host,
+                        "vendor": vendor,
+                        "status": "online"
+                    }
+
+
                     # PUSH STATUS
-                    with LOCK:
-                        Push_Network_Status.push_device_info(
-                            
-                            target_ip=target_ip,
-                            target_mac=target_mac,
-                            host=host,
-                            vendor=vendor,
-                            status="online"
-                            
-                            )
+                    if leg:
+                        with LOCK:
+                            Push_Network_Status.push_device_info(
+                                
+                                target_ip=target_ip,
+                                target_mac=target_mac,
+                                host=host,
+                                vendor=vendor,
+                                status="online"
+                                
+                                )
                     
                     
                     # DELAY
@@ -213,17 +234,28 @@ class Connection_Handler():
                 # NOW OFFLINE
                 elif count > 6:
 
+
+                    # NEW WAY
+                    cls.nodes[target_ip] = {
+                        "target_ip": target_ip,
+                        "target_mac": target_mac,
+                        "host": host,
+                        "vendor": vendor,
+                        "status": "offline"
+                    }
+
                     # PUSH STATUS
-                    with LOCK:
-                        Push_Network_Status.push_device_info(
-                            
-                            target_ip=target_ip,
-                            target_mac=target_mac,
-                            host=host,
-                            vendor=vendor,
-                            status="offline"
-                            
-                            )
+                    if leg:
+                        with LOCK:
+                            Push_Network_Status.push_device_info(
+                                
+                                target_ip=target_ip,
+                                target_mac=target_mac,
+                                host=host,
+                                vendor=vendor,
+                                status="offline"
+                                
+                                )
                     
 
                     # OFFLINE
@@ -254,17 +286,28 @@ class Connection_Handler():
                 Network_Scanner.subnet_devices.remove(target_ip)
 
 
+                # NEW WAY
+                cls.nodes[target_ip] = {
+                    "target_ip": target_ip,
+                    "target_mac": target_mac,
+                    "host": host,
+                    "vendor": vendor,
+                    "status": "offline"
+                }
+
+
                 # SET OFFLINE (FOR NOW)
-                with LOCK:
-                    Push_Network_Status.push_device_info(
-                        
-                        target_ip=target_ip,
-                        target_mac=target_mac,
-                        host=host,
-                        vendor=vendor,
-                        status="offline"
-                        
-                        )
+                if leg:
+                    with LOCK:
+                        Push_Network_Status.push_device_info(
+                            
+                            target_ip=target_ip,
+                            target_mac=target_mac,
+                            host=host,
+                            vendor=vendor,
+                            status="offline"
+                            
+                            )
 
 
                 # KILL THREAD
@@ -288,21 +331,21 @@ class Connection_Handler():
 
             # GIVE OPTION FOR DEFAULT
             if def_local_ip != "":
-                use = f"or press enter for {def_local_ip}"
+                use = f"[bold yellow]or press enter for {def_local_ip}"
             
             else:
                 use = ""
 
             
             
-            local_ip = console.input(f"[bold blue]Enter your local IP {use}: ").strip()
+            local_ip = console.input(f"[bold green]Enter your local IP {use}: ").strip()
             
 
             # NEED SOME TYPE OF IFACE
             if local_ip == "" and def_local_ip == "":
 
                 console.print("You must enter subnet to procced silly", style="bold red")
-
+                exit()
             
             # ROLL BACK TO DEFAUT
             elif local_ip == "":
@@ -544,14 +587,14 @@ class Utilities():
 
             # GIVE OPTION FOR DEFAULT
             if def_subnet != "":
-                use = f"or press enter for {def_subnet}"
+                use = f"[bold yellow]or press enter for {def_subnet}"
             
             else:
                 use = ""
 
             
             
-            subnet = console.input(f"[bold blue]Enter subnet {use}: ").strip()
+            subnet = console.input(f"[bold green]Enter subnet {use}: ").strip()
             
 
             # NEED SOME TYPE OF IFACE
@@ -601,11 +644,11 @@ class Utilities():
             choice = console.input(f"[{c4}]Do you want to load[/{c4}] [{c2}]CLI or GUI?: ").strip().lower()
 
 
-            if choice in ["gui", "cli"]:
+            if choice in ["cli", "1", ""]:
 
-                return choice
+                return "cli"
             
-            elif choice in ["1", ""]:
+            elif choice in ["gui", "2"]:
 
                 return "gui"
             
@@ -671,14 +714,14 @@ class Utilities():
 
             # GIVE OPTION FOR DEFAULT
             if def_iface != "":
-                use = f"or press enter for {def_iface}"
+                use = f"[bold yellow]or press enter for {def_iface}"
             
             else:
                 use = ""
 
             
            
-            iface = console.input(f"[bold blue]Enter iface {use}: ").strip()
+            iface = console.input(f"[bold green]Enter iface {use}: ").strip()
             
 
             # NEED SOME TYPE OF IFACE
@@ -717,7 +760,7 @@ class Utilities():
         try:
             
             # GET HOST
-            host = socket.gethostbyaddr(target_ip)
+            host = socket.gethostbyaddr(target_ip)[1]
 
             console.print(host)
 
@@ -771,6 +814,23 @@ class Utilities():
             response = manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
  
  
+    @classmethod
+    def get_os(cls, target_ip, verbose=1):
+
+        nm = nmap.PortScanner()
+
+        results = nm.scan(hosts=target_ip, arguments="-O")
+
+
+        # VERBOSE TESTING
+        if verbose:
+
+            console.print(f"OS DETECTION: {results}")
+
+        
+
+
+
     @classmethod
     def flash_lights(cls, CONSOLE, say=False, server_ip="192.168.1.51", action="alert", verbose=False):
         """This method will be responsible for flashing lights via web api to esp"""

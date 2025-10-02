@@ -37,12 +37,17 @@ class Main():
           """Start here"""
           
           try:
+                  
                 
                 # GET CONN STATUS
                   if Connection_Handler.get_conn_status():
 
                         # CLEAR SCREEN
                         Utilities.clear_screen()
+
+
+                        # MAIN TITLE
+                        Main.run_title()
 
 
                         # START PROGRAM ELAPSED TIME COUNTER
@@ -90,16 +95,51 @@ class Main():
 
 
 
-                        while True:
-                              pass
+                        #while True:
+                            #  pass
 
 
 
 
           except Exception as e:
             print(f"Exception Error: {e}")
+      
+    
+
+    @classmethod
+    def run_title(cls, text="         Net\n      Alert", color="bold blue",font="bloody"):
+         
+
+         # COLORS
+         c1 = "bold blue"
+         c2 = "bold red"
+
+
+         # BORDER SPACE
+         console.print("\n\n\n")
+      
+
+         # CREATE PROGRAM STATS
+         t1 = pyfiglet.figlet_format(text="          Net", font=font)
+         t2 = pyfiglet.figlet_format(text="       Alert", font=font)
+         console.print(t1, style=c1)
+         console.print(t2, style=c2)
+
+
+         # CREDITS
+         console.print(
+              f"\n      [{c1}]==========================================================================",
+              f"\n      [{c2}]    ==================   Developed by NSM Barii   ==================== [/{c2}]",
+              f"\n      [{c1}]=========================================================================="
+              )
+
+         
+         # PROGRAM SPACE
+         print("\n\n")
+
+      
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
      Main.run()
