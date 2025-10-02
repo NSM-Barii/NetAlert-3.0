@@ -272,9 +272,16 @@ class Connection_Handler():
 
                     count += 1
                     timeout += 0.5
-
+                
 
                     time.sleep(0.1)
+
+
+                    if verbose:
+                        console.print("arping -- ", target_ip)
+
+                if verbose:
+                    console.print("here -- ", target_ip)
             
 
             except Exception as e:

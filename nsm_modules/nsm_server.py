@@ -43,6 +43,11 @@ class Server():
             os.system(f"python3 -m http.server -b {local_ip} {port} -d {dir} 2>/dev/null")
                     #{local_ip} {port} -d {dir} 2>/dev/null
 
+            
+            # CREATE SYSLINK
+            #os.symlink(src="Documents/nsm_tools/.data/netalert3/nodes.json", dst="Documents/nsm_tools/netalert3/web_modules/nodes.json")
+            os.system("ln -s ../../.data/netalert3/nodes.json ~/Documents/nsm_tools/netalert3/web_modules/nodes.json")
+
         # WINDOWS
         else:
             os.system(f"python -m http.server -d {dir}")
