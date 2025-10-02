@@ -573,7 +573,7 @@ class Push_Network_Status():
 
  
             # PRINT
-            console.print("[bold red][+][bold yellow] Background Thread 1 started")
+            console.print("[bold green][+][bold yellow] Background Thread 1 started")
 
             
             # LOOP INDEFIENTLY

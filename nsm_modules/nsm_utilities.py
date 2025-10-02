@@ -13,7 +13,7 @@ console = Console()
 # NETWORK IMPORTS
 import socket, requests, manuf, ifcfg
 from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
-import nmap
+#import nmap
 
 
 

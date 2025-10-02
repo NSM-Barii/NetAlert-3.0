@@ -148,7 +148,7 @@ class Network_Scanner():
 
 
                         # GET OS
-                        os = Utilities.get_os(target_ip=target_ip, verbose=1)
+                        #os = Utilities.get_os(target_ip=target_ip, verbose=1)
                         
                         
                         # APPEND TO LIST
@@ -157,7 +157,7 @@ class Network_Scanner():
 
                         # ALERT THE USER
                         #if verbose:
-                        console.print(f"[{c1}][+] Found Node:[{c3}] {target_ip}")  # [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
+                        console.print(f"[{c2}][+][/{c2}] [bold red]Tracking ->[{c3}] {target_ip}")  # [{c3}]<-->[/{c3}] {target_mac}  -  {vendor}")
 
 
                         # TRACK DEVICE CONNECTION STATUS
@@ -396,7 +396,7 @@ class Network_Scanner():
 
             # START ARP SCAN
             threading.Thread(target=Network_Scanner.subnet_scanner, args=(iface, subnet), daemon=True).start()
-            console.print("[bold red][+][bold yellow] Background Thread 2 started")
+            console.print("[bold green][+][bold yellow] Background Thread 2 started")
             
 
 
