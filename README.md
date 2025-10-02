@@ -88,12 +88,12 @@ If you want the frontend in `web_modules` to directly use the live `nodes.json` 
 
 ```bash
 cd web_modules
-ln -s ../nsm_modules/nodes.json nodes.json
+ln -s ../../.data/netalert3/nodes.json .
 ```
 
 Alternatively, you can point the frontend to read from:
 ```
-~/Documents/nsm_tools/.data/netalert3/nodes.json
+~/Documents/nsm_tools/.data/netalert3/nodes.json (NOT RECOMMENDED)
 ```
 
 This ensures the web interface always displays the latest device data.

@@ -40,13 +40,16 @@ class Server():
         
         # RUN SERVER
         if os.name == "posix":
+            
+            console.print("[bold green]Run this if your new --> [bold yellow]cd web_modules - ln -s ../../.data/netalert3/nodes.json . ")
             os.system(f"python3 -m http.server -b {local_ip} {port} -d {dir} 2>/dev/null")
                     #{local_ip} {port} -d {dir} 2>/dev/null
 
             
             # CREATE SYSLINK
+            #console.print("[bold green]Run this if your new --> [bold yellow]cd web_modules - ln -s ../../.data/netalert3/nodes.json . ")
             #os.symlink(src="Documents/nsm_tools/.data/netalert3/nodes.json", dst="Documents/nsm_tools/netalert3/web_modules/nodes.json")
-            os.system("ln -s ../../.data/netalert3/nodes.json ~/Documents/nsm_tools/netalert3/web_modules/nodes.json")
+            #os.system("ln -s ../../.data/netalert3/nodes.json ~/Documents/nsm_tools/netalert3/web_modules/nodes.json")
 
         # WINDOWS
         else:
