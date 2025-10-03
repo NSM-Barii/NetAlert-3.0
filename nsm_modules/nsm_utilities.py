@@ -781,9 +781,9 @@ class Utilities():
         try:
             
             # GET HOST
-            host = socket.gethostbyaddr(target_ip)
+            host = socket.gethostbyaddr(target_ip).split(",")[0]
 
-            console.print(host)
+            #console.print(host)
 
 
             # RETURN VALUE
