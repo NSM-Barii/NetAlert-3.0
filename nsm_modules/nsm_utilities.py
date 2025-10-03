@@ -783,12 +783,12 @@ class Utilities():
             # GET HOST
             host = socket.gethostbyaddr(target_ip)
 
-            console.print(host)
-            console.print(host.split(','))
+            #console.print(host)
+            #console.print(host.split(','))
 
 
             # RETURN VALUE
-            return host
+            return host[0]
         
 
         except Exception as e:
