@@ -229,6 +229,20 @@ class Connection_Handler():
                     # DELAY
                     time.sleep(delay)
 
+
+                    # TRY AND RE QUERY VENDOR IF NONE
+                    if not vendor:
+                        vendor = Utilities.get_vendor(mac=target_mac)
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "online"
+                        }
+
+
+                        #console.print("got --> ", vendor)
                 
 
                 # NOW OFFLINE
@@ -767,7 +781,7 @@ class Utilities():
         try:
             
             # GET HOST
-            host = socket.gethostbyaddr(target_ip)[1]
+            host = socket.gethostbyaddr(target_ip)
 
             console.print(host)
 

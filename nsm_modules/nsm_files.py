@@ -613,6 +613,10 @@ class Push_Network_Status():
 
                     if status == "online":
                         cls.nodes_online += 1
+
+                    
+                    if verbose:
+                        console.print(target_ip, "-->", vendor)
                     
                     
                     
