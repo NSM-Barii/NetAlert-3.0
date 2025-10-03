@@ -781,13 +781,13 @@ class Utilities():
         try:
             
             # GET HOST
-            host = socket.gethostbyaddr(target_ip).split(",")[0]
+            host = socket.gethostbyaddr(target_ip)
 
             #console.print(host)
 
 
             # RETURN VALUE
-            return host
+            return host.split(",")[0]
         
 
         except Exception as e:
