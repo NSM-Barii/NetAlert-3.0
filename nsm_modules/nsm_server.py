@@ -42,7 +42,7 @@ class Server():
         if os.name == "posix":
             
             console.print("[bold green]Run this if your new --> [bold yellow]cd web_modules - ln -s ../../.data/netalert3/nodes.json . ")
-            os.system(f"python3 -m http.server  -d {dir} ")
+            os.system(f"python3 -m http.server  -d {dir}  2>/dev/null ")
                     #{local_ip} {port} -d {dir} 2>/dev/null
 
             
