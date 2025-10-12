@@ -1163,6 +1163,8 @@ class TTS():
         # TO PREVENT DRIVER ERRORS
         if not cls.drive_error: 
 
+            console.print("hey")
+
             try:
 
                 tts = gTTS(say, tld='com.au')
