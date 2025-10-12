@@ -1161,15 +1161,16 @@ class TTS():
         
 
         # TO PREVENT DRIVER ERRORS
-        console.print("hey1")
         if not cls.drive_error: 
 
             console.print("hey")
 
             try:
 
-                tts = gTTS(say, tld='com.au')
+                tts = gTTS(say)
                 tts.save("output.mp3")
+
+                time.sleep(.3)
 
                 #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
                 os.system("mpg123 output.mp3 2>/dev/null")
