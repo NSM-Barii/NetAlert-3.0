@@ -1161,6 +1161,7 @@ class TTS():
         
 
         # TO PREVENT DRIVER ERRORS
+        console.print("hey1")
         if not cls.drive_error: 
 
             console.print("hey")
