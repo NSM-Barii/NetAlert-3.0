@@ -165,91 +165,129 @@ class Connection_Handler():
         c4 = "bold yellow"
 
 
+        # GET LOCAL
+        local_ip = File_Handling.get_json(verbose=False)["local_ip"]
+
+
         # PACKETS
         arp = Ether(dst=target_mac) / ARP(pdst=target_ip)
         ping = IP(dst=target_ip) / ICMP()
 
 
+        # FOR LOCAL DEVICE // THIS WILL PREVENT ADAPTER FROM SENDING PACKETS TO ITSLEF RESULTING IN CONSTANT JUMPS BETWEEN ONLINE AND OFFLINE STATUS
+        #local = File_Handling.get_json(verbose=False)["local_ip"]
+  
 
-        while True:
+        if target_ip == File_Handling.get_json(verbose=False)["local_ip"]:
 
-            try:
+            console.print("[bold green][+] [bold yellow]found local --> ", target_ip)
 
-                # APPEND
-                count += 1
 
-                # GET
-                with LOCK:
-                    response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+            # DOESNT WORK
+            skip = True
+
+            cls.nodes[target_ip] = {
+                "target_ip": target_ip,
+                "target_mac": target_mac,
+                "host": host,
+                "vendor": vendor,
+                "status": "online"
+            }
+
+
+
+
+            if not skip:
+
+                while True:
+
+                    try:
+
+                        # PING YOURSELF
+                    # ping = IP(dst=target_ip) / ICMP()
+
+                        #response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+                        
+                        # DOUBLE CHECK
+                        #if response in [None, False]:
+                        # response = sr1(ping, iface=iface, timeout=timeout, verbose=0)
+
+                        if response:
+
+                            cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "online"
+                        }
+                            
+
+                            # RESET
+                            count = 0
+                            
+                        elif count > 6:
+
+                            cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "offline"
+                        }
+                            
+                        elif count > 6:
+                            count += 1
+                            
+
+                        # WAIT
+                        time.sleep(10)
                     
-                    # DOUBLE CHECK
-                    if response in [None, False]:
-                        response = sr1(ping, iface=iface, timeout=timeout, verbose=0)
 
-
-                # IF NOW ONLINE
-                if response and not online:
+                    except Exception as e:
+                        console.print(f"[bold red]Exception Error:[bold yellow] {e}")
                     
-                    # UPDATE
-                    online = True
-                    timeout = 0.5
-                    count = 0
-
-
-                    if verbose:
-                        console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
-
-
-                    
-                    # NEW WAY
-                    cls.nodes[target_ip] = {
-                        "target_ip": target_ip,
-                        "target_mac": target_mac,
-                        "host": host,
-                        "vendor": vendor,
-                        "status": "online"
-                    }
-
-                    # UPDATE STATUS
-                    status = "online"
-
-                    # ANNOUNCE
-                    if scans > 3:
-                        Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
-
-
-                    # PUSH STATUS
-                    if leg:
-                        with LOCK:
-                            Push_Network_Status.push_device_info(
-                                
-                                target_ip=target_ip,
-                                target_mac=target_mac,
-                                host=host,
-                                vendor=vendor,
-                                status="online"
-                                
-                                )
-                    
-                    
-                    # DELAY
-                    time.sleep(delay)
                 
+            
+            
 
-                # STILL ONLINE
-                elif response:
+        # SUBNET DEVICES // NOT HOST DEVICE
+        else:
 
-                    if verbose:
-                        console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
+            while True:
+
+                
+                try:
+
+                    # APPEND
+                    count += 1
+
+                    # GET
+                    with LOCK:
+                        response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+                        
+                        # DOUBLE CHECK
+                        if not response:
+                            pass
+                           # console.print("2")
+                            #response = sr1(ping, iface=iface, timeout=timeout, verbose=0)
 
 
-                    # DELAY
-                    time.sleep(delay)
+                    # IF NOW ONLINE
+                    if response and not online:
+                        
+                        # UPDATE
+                        online = True
+                        timeout = 0.5
+                        count = 0
 
 
-                    # TRY AND RE QUERY VENDOR IF NONE
-                    if not vendor:
-                        vendor = Utilities.get_vendor(mac=target_mac)
+                        if verbose:
+                            console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
+
+
+                        
+                        # NEW WAY
                         cls.nodes[target_ip] = {
                             "target_ip": target_ip,
                             "target_mac": target_mac,
@@ -258,121 +296,174 @@ class Connection_Handler():
                             "status": "online"
                         }
 
+                        # UPDATE STATUS
+                        status = "online"
 
-                        #console.print("got --> ", vendor)
-                
-
-                # NOW OFFLINE
-                elif count > 6:
+                        # ANNOUNCE
+                        if scans > 3:
+                            Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
 
 
-                    # NEW WAY
-                    cls.nodes[target_ip] = {
-                        "target_ip": target_ip,
-                        "target_mac": target_mac,
-                        "host": host,
-                        "vendor": vendor,
-                        "status": "offline"
-                    }
+                        # PUSH STATUS
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="online"
+                                    
+                                    )
+                        
+                        
+                        # DELAY
+                        time.sleep(delay)
                     
 
-                    # UPDATE STATUS
-                    status = "offline"
+                    # STILL ONLINE
+                    elif response:
+
+                        if verbose:
+                            console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
 
 
-                    # ANNOUNCE
-                    Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+                        # DELAY
+                        time.sleep(delay)
 
-                    # PUSH STATUS
-                    if leg:
-                        with LOCK:
-                            Push_Network_Status.push_device_info(
-                                
-                                target_ip=target_ip,
-                                target_mac=target_mac,
-                                host=host,
-                                vendor=vendor,
-                                status="offline"
-                                
-                                )
+
+                        # TRY AND RE QUERY VENDOR IF NONE
+                        if not vendor:
+                            vendor = Utilities.get_vendor(mac=target_mac)
+                            cls.nodes[target_ip] = {
+                                "target_ip": target_ip,
+                                "target_mac": target_mac,
+                                "host": host,
+                                "vendor": vendor,
+                                "status": "online"
+                            }
+
+
+                            #console.print("got --> ", vendor)
                     
 
-                    # OFFLINE
-                    online = False
+                    # NOW OFFLINE
+                    elif count > 6:
+
+
+                        # NEW WAY
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "offline"
+                        }
+                        
+
+                        # UPDATE STATUS
+                        status = "offline"
+
+
+                        #console.print(response)
+                        
+
+
+                        # ANNOUNCE
+                        if online:
+                            Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+
+                        # PUSH STATUS
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="offline"
+                                    
+                                    )
+                        
+
+                        # OFFLINE
+                        online = False
+                        
+
+                        # DELAY
+                        time.sleep(delay)
                     
 
-                    # DELAY
-                    time.sleep(delay)
-                
+                    
+                    # RE-TRY ARP
+                    else:
 
-                
-                # RE-TRY ARP
-                else:
+                        count += 1
+                        timeout += 0.5
+                    
 
-                    count += 1
-                    timeout += 0.5
-                
-
-                    time.sleep(0.1)
+                        time.sleep(0.1)
 
 
+                        if verbose:
+                            console.print("arping -- ", target_ip)
+                    
+
+                    # FOR TESTING
                     if verbose:
-                        console.print("arping -- ", target_ip)
+                        console.print("here -- ", target_ip)
+                    scans += 1
                 
 
-                # FOR TESTING
-                if verbose:
-                    console.print("here -- ", target_ip)
-                scans += 1
-            
-
-            except Exception as e:
-                console.print(e)
+                except Exception as e:
+                        console.print(e)
 
 
-                # REMOVE FROM LIST
-                from nsm_network_scanner import Network_Scanner
-                Network_Scanner.subnet_devices.remove(target_ip)
+                        # REMOVE FROM LIST
+                        from nsm_network_scanner import Network_Scanner
+                        Network_Scanner.subnet_devices.remove(target_ip)
 
 
-                # NEW WAY
-                cls.nodes[target_ip] = {
-                    "target_ip": target_ip,
-                    "target_mac": target_mac,
-                    "host": host,
-                    "vendor": vendor,
-                    "status": "offline"
-                }
+                        # NEW WAY
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "offline"
+                        }
 
 
-                # UPDATE STATUS
-                status = "offline"
+                        # UPDATE STATUS
+                        status = "offline"
 
 
-                # ANNOUNCE
-                Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+                        # ANNOUNCE
+                        Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
 
 
-                # SET OFFLINE (FOR NOW)
-                if leg:
-                    with LOCK:
-                        Push_Network_Status.push_device_info(
-                            
-                            target_ip=target_ip,
-                            target_mac=target_mac,
-                            host=host,
-                            vendor=vendor,
-                            status="offline"
-                            
-                            )
+                        # SET OFFLINE (FOR NOW)
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="offline"
+                                    
+                                    )
 
 
-                # KILL THREAD
-                console.print(f"[bold red][-] Thread Killed:[bold yellow] {target_ip}")
+                        # KILL THREAD
+                        console.print(f"[bold red][-] Thread Killed:[bold yellow] {target_ip}")
 
-                break
+                        break
 
-            
+                
     @staticmethod
     def get_local_ip(iface=False, verbose=True):
         """This method will be responsible for getting local ip"""
