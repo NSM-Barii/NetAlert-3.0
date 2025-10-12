@@ -1169,8 +1169,6 @@ class TTS():
                 tts = gTTS(say)
                 tts.save("output.mp3")
 
-                time.sleep(.3)
-
                 #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
                 os.system("mpg123 output.mp3 2>/dev/null")
             
