@@ -117,6 +117,11 @@ class Network_Scanner():
         c2 = "bold green"
         c3 = "bold yellow"
         num = 0
+
+
+        # ANNOUNCE
+        from nsm_utilities import TTS
+        TTS.tts_google("Starting")
         
 
         while cls.SNIFF:
@@ -162,6 +167,14 @@ class Network_Scanner():
 
                         # TRACK DEVICE CONNECTION STATUS
                         threading.Thread(target=Connection_Handler.status_checker, args=(target_ip, target_mac, host, vendor, iface), daemon=True).start()
+
+
+
+                        # SPEAK
+                        
+                         # from nsm_utilities import Utilities
+                        if num > 6:
+                            Utilities.announce_device(ip=target_ip, host=host, type=1, verbose=False)
             
 
                 

@@ -20,12 +20,14 @@ from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
 # ETC IMPORTS
 import sqlite3, os, threading, time, random, json
 from datetime import datetime, timedelta
+import argparse, subprocess
 
 
 # VOICE 
 from gtts import gTTS
 import pyttsx3
-
+#from vonage import Auth, Vonage
+#from vonage_voice import CreateCallRequest, Phone, ToPhone
 
 
 # NSM IMPORTS
@@ -136,6 +138,11 @@ class Connection_Handler():
         """This method will be responsible for monitroing the connection status of the target_ip"""
 
 
+        
+        # CURRENTLY TESTING
+        #Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=1)
+
+
         # LEGACY CONTROLLER
         leg = False
 
@@ -146,6 +153,9 @@ class Connection_Handler():
         timeout = 0.5
         online = 0
         count = 0
+        
+        # COUNT THE AMOUNT OF SCANS PERFORMED
+        scans = 0
 
 
         # COLORS
@@ -199,6 +209,13 @@ class Connection_Handler():
                         "vendor": vendor,
                         "status": "online"
                     }
+
+                    # UPDATE STATUS
+                    status = "online"
+
+                    # ANNOUNCE
+                    if scans > 3:
+                        Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
 
 
                     # PUSH STATUS
@@ -257,6 +274,14 @@ class Connection_Handler():
                         "vendor": vendor,
                         "status": "offline"
                     }
+                    
+
+                    # UPDATE STATUS
+                    status = "offline"
+
+
+                    # ANNOUNCE
+                    Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
 
                     # PUSH STATUS
                     if leg:
@@ -293,9 +318,12 @@ class Connection_Handler():
 
                     if verbose:
                         console.print("arping -- ", target_ip)
+                
 
+                # FOR TESTING
                 if verbose:
                     console.print("here -- ", target_ip)
+                scans += 1
             
 
             except Exception as e:
@@ -315,6 +343,14 @@ class Connection_Handler():
                     "vendor": vendor,
                     "status": "offline"
                 }
+
+
+                # UPDATE STATUS
+                status = "offline"
+
+
+                # ANNOUNCE
+                Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
 
 
                 # SET OFFLINE (FOR NOW)
@@ -507,6 +543,7 @@ class Utilities():
 
     # CLASS VAR
     talk = True
+    free = True
     UI = False
 
     def __init__(self):
@@ -527,6 +564,126 @@ class Utilities():
             os.system("cls")
 
     
+
+    @staticmethod
+    def change_settings():
+
+
+        parser = argparse.ArgumentParser(description="Settings menu")
+        
+
+        parser.add_argument(
+            help="Add discord webhook",
+
+            )
+    
+
+
+    @staticmethod
+    def phone_call():
+        """This method will be responsible for performing phone calls to the user"""
+
+
+        # yDRQKlgA09zYE5bo  // https://dashboard.nexmo.com/make-a-voice-call
+
+
+
+        # CALL
+        phone_to = "813-446-0242"
+        phone_from = ""
+
+
+
+
+        try:
+
+
+            # PRINT
+            console.print("responseresponse")
+
+
+
+
+        
+        except Exception as e:
+            console.print(f"[bold red]Phone call Exception Error:[bold yellow] {e}")
+
+
+  
+    @classmethod
+    def announce_device(cls, ip, type, status=False, vendor=False, host=False, verbose=False):
+        """This method will announce devices based on host or ip"""
+
+
+
+        with LOCK:
+
+
+            # QUEUE SERVICE
+            while not cls.free:
+                pass
+
+            
+            # PAUSE OTHER THREADS
+            cls.free = False
+
+
+            # FOR NEW DEVICES FOUND ON THE NETWORK
+            if type in [1, "new"]:
+
+
+                if host:
+
+                    note = f"Attention, there was a new device detected with the name of: {host}"
+                
+
+                elif vendor:
+
+                    note = f"Attention, there was a new device detected with the vendor of: {vendor}" 
+
+                
+                else:
+
+                    note = f"Attention, there was a new device detected with the IP Address of: {ip}"
+            
+            
+
+            # FOR STATUS UPDATE ON DEVICE  (ONLINE/OFFLINE)
+            elif type in [2, "status"]:
+
+
+                if host:
+                    
+                    note = f"{host} is now {status}"
+
+
+                elif vendor:
+
+                    note = f"{vendor} is now {status}" 
+                
+
+                else:
+
+                    note = f"{ip} is now {status}"
+
+            
+
+            # VERBOSE
+            if verbose:
+                console.print(f"{note}")
+            
+            # NOW ANNOUNCE
+            TTS.tts_google(say=note)
+            #TTS.tts_def(letter=note, voice_rate=5)
+
+
+            # UNPAUSE
+            cls.free = True
+
+
+
+ 
+
     @staticmethod
     def push_to_discord(data, verbose=True):
         """This method will be used to push (post)data info to discord"""
@@ -579,7 +736,7 @@ class Utilities():
             except Exception as e:
 
                 if verbose:
-                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                    console.print(f"[bold red]Discord nsm_modules/output.mp3Exception Error:[bold yellow] {e}")
                 
                 count =- 1
                 timeout += 1
@@ -851,8 +1008,6 @@ class Utilities():
 
         
 
-
-
     @classmethod
     def flash_lights(cls, CONSOLE, say=False, server_ip="192.168.1.51", action="alert", verbose=False):
         """This method will be responsible for flashing lights via web api to esp"""
@@ -984,30 +1139,44 @@ class TTS():
     """This class will be responsible for holding all TTS variations"""
 
 
+    # WILL USE THIS VARIABLE FOR DRIVER ERROR/MISCONFIG
+    drive_error = False
+
+
     @staticmethod
-    def tts_espeak(cls, say):
+    def tts_espeak( say):
         """This method will be responsible for speaking aloud text"""
 
 
         say = str(say)
 
-        os.system(f"espeak -p 20 {say}")
+        os.system(f"espeak  {say}")
     
 
 
-    @staticmethod
-    def tts_google(say=False):
+    @classmethod
+    def tts_google(cls, say=False):
         """This will use a new approach to speaking"""
 
-
-        try:
-            tts = gTTS(say, tld='com.au')
-            tts.save("output.mp3")
-            os.system("mpg123 output.mp3")
         
-        except Exception as e:
-            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
-    
+
+        # TO PREVENT DRIVER ERRORS
+        if not cls.drive_error: 
+
+            try:
+
+                tts = gTTS(say, tld='com.au')
+                tts.save("output.mp3")
+
+                #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
+                os.system("mpg123 output.mp3 2>/dev/null")
+            
+            except Exception as e:
+                console.print(f"[bold red]TTS Driver - Exception Error:[bold yellow] {e}")
+
+
+                # DRIVER ERROR
+                cls.drive_error = True    
 
 
     @staticmethod
@@ -1020,43 +1189,68 @@ class TTS():
         os.system(f'edge-tts --voice en-US-GuyNeural --rate="+10%" --text "{say}" --write-media jewl.mp3 && mpg123 jewl.mp3')
 
     
-    @staticmethod
-    def tts_def( letter, voice_rate= 20):
+    @classmethod
+    def tts_def(cls, letter, voice_rate= 20):
         """Responsible for text to speech"""
 
-        engine = pyttsx3.init()
+
+        # IF DRIVER ALREADY THREW A ERROR
+        if not cls.drive_error:
+
+            engine = pyttsx3.init()
+            
+            voices = engine.getProperty('voices')
+            rate = engine.getProperty('rate')
+
+            # SET VOLUME
+        # volume = engine.getProperty('volume')
+
+
+            #console.print(f"{letter}")
+
+            if letter == "start":
+                console.print("Initializing...", style="bold yellow")
+                letter = "Initializing"
+            
         
-        voices = engine.getProperty('voices')
-        rate = engine.getProperty('rate')
-
-        # SET VOLUME
-       # volume = engine.getProperty('volume')
-        
-       
-        
-        try:
-           # engine.setProperty('volume', 20)
-            engine.setProperty('rate', rate - voice_rate)
-           
-        except Exception as e:
-            console.print(e)
-  
-
-        if len(voices) > 1:
-            engine.setProperty('voice', voices[1].id)
-           # console.print("Voice set to 1")
-        
-        else:
-            engine.setProperty('voice', voices[0].id)
-           # console.print("voice set to 0")
-
-        engine.say(letter)
-        engine.runAndWait()
-
-
-
-   
+            
+            try:
+            # engine.setProperty('volume', 20)
+                engine.setProperty('rate', rate - voice_rate)
+            
+            except Exception as e:
+                console.print(e)
     
+
+            if len(voices) > 1:
+                engine.setProperty('voice', voices[1].id)
+            # console.print("Voice set to 1")
+            
+            else:
+                engine.setProperty('voice', voices[0].id)
+            # console.print("voice set to 0")
+            
+            
+        
+            try:
+
+                # WAIT IN QUEUE
+                while not engine.isBusy():
+                    pass
+
+                # NOW SPEAK
+                engine.say(letter)
+                engine.runAndWait()
+                engine.stop()
+            
+
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
+                # SET IT FALSE
+                cls.drive_error = True
+            
 
 
 
@@ -1067,8 +1261,15 @@ if __name__ == "__main__":
     
 
     # SET
-    use = 1
+    use = 3
 
+
+
+    if use == 3:
+
+        h = "ATTENTION, new device detected on your network"
+
+        TTS.tts_def(letter=h, voice_rate=10)
     
     if use == 1:
         mac = ""

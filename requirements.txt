@@ -1,3 +1,4 @@
+requests
 scapy
 manuf
 ipaddress
@@ -10,3 +11,6 @@ numpy
 gtts
 pyttsx3
 ifcfg
+gtts
+
+

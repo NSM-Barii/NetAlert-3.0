@@ -1,0 +1,75 @@
+🎯 How to Get pyttsx3 Text-to-Speech Working on Kali Linux (with Audio Fixes)
+
+✅ Step 1: Install Required Packages
+------------------------------------
+Run this command to install audio and speech tools:
+
+    sudo apt update
+    sudo apt install -y alsa-utils pulseaudio espeak espeak-ng python3-pip
+    pip install pyttsx3
+
+✅ Step 2: Check Audio Devices
+-----------------------------
+Run the following to make sure your system detects sound hardware:
+
+    aplay -l
+
+You should see something like:
+
+    card 0: HDMI Output
+    card 1: ALC255 Analog (Laptop Speakers)
+
+✅ Step 3: Set Analog Audio as Default (Card 1)
+----------------------------------------------
+Edit the ALSA config:
+
+    sudo nano /etc/asound.conf
+
+Paste the following:
+
+    defaults.pcm.card 1
+    defaults.ctl.card 1
+
+✅ Step 4: Reload ALSA and Unmute Output
+---------------------------------------
+Reload sound drivers:
+
+    sudo alsa force-reload
+
+Then run the mixer to unmute and raise volume:
+
+    alsamixer
+
+- Press F6 and select "card 1: ALC255 Analog"
+- Use arrow keys to raise volume
+- Press M to unmute any muted channels
+
+✅ Step 5: Test Sound Output
+----------------------------
+Try playing a test sound:
+
+    aplay /usr/share/sounds/alsa/Front_Center.wav
+
+You should hear “Front Center”. If not, verify step 3 & 4.
+
+✅ Step 6: Test Speech (espeak and pyttsx3)
+------------------------------------------
+Using espeak directly:
+
+    espeak "Hello from Kali Linux"
+
+Using Python with pyttsx3:
+
+    import pyttsx3
+    engine = pyttsx3.init()
+    engine.say("This is NetAlert speaking")
+    engine.runAndWait()
+
+✅ Optional Fallback (if pyttsx3 fails)
+---------------------------------------
+
+    import os
+    os.system('echo "Alert" | espeak --stdout | aplay -D plughw:1,0')
+
+✅ You're done!
+Now your Python scripts can speak on Kali using pyttsx3 and system audio.
