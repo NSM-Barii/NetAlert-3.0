@@ -1029,14 +1029,20 @@ class Utilities():
         try:
             
             # GET HOST
-            host = socket.gethostbyaddr(target_ip)
+            host = socket.gethostbyaddr(target_ip)[0]
+
+
+            if host.split('.')[0]:
+
+                host = host.split('.')[0]
+                
 
             #console.print(host)
             #console.print(host.split(','))
 
 
             # RETURN VALUE
-            return host[0]
+            return host
         
 
         except Exception as e:
