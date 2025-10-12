@@ -11,6 +11,6 @@ numpy
 gtts
 pyttsx3
 ifcfg
-gtts
+
 
 
