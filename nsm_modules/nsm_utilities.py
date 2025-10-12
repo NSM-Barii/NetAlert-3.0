@@ -1163,7 +1163,6 @@ class TTS():
         # TO PREVENT DRIVER ERRORS
         if not cls.drive_error: 
 
-            console.print("hey")
 
             try:
 
@@ -1173,7 +1172,7 @@ class TTS():
                 time.sleep(.3)
 
                 #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
-                os.system("mpg123 output.mp3")
+                os.system("mpg123 output.mp3 2>/dev/null")
             
             except Exception as e:
                 console.print(f"[bold red]TTS Driver - Exception Error:[bold yellow] {e}")

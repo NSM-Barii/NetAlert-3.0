@@ -5,6 +5,7 @@
 Run this command to install audio and speech tools:
 
     sudo apt update
+    sudo apt install mpg123
     sudo apt install -y alsa-utils pulseaudio espeak espeak-ng python3-pip
     pip install pyttsx3
 
