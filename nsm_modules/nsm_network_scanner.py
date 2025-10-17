@@ -196,7 +196,8 @@ class Network_Scanner():
                 # IN CASE OF DIFFERENT ERROR
                 time.sleep(5)
         
-
+    
+    # THIS CLASS IS DEAPPRECIATE // USE NEWER VERSION IN UTILITIES
     @classmethod
     def node_tracker(cls, target_ip, target_mac, host, vendor, timeout=5, verbose=0):
         """This method will be responsible for tracking node connection status"""
