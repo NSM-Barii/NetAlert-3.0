@@ -1,0 +1,67 @@
+TEXT-TO-SPEECH (TTS) SETUP FOR ARCH LINUX WITH pyttsx3 + ALSA
+=============================================================
+
+This guide adapts a typical Kali/Ubuntu-based TTS setup to work on Arch Linux.
+
+STEP 1: INSTALL DEPENDENCIES
+----------------------------
+sudo pacman -Syu
+sudo pacman -S mpg123 alsa-utils pulseaudio espeak-ng python-pip
+pip install pyttsx3
+
+NOTE:
+- You do NOT need 'espeak' separately; Arch uses espeak-ng (the newer version).
+
+STEP 2: CHECK AUDIO DEVICES
+---------------------------
+aplay -l
+
+Look for output like:
+    card 0: HDMI ...
+    card 1: Analog ...
+
+NOTE the card number of the analog output (usually 1).
+
+STEP 3: SET DEFAULT ALSA OUTPUT CARD
+------------------------------------
+Edit the ALSA config:
+
+sudo nano /etc/asound.conf
+
+Paste this:
+    defaults.pcm.card 1
+    defaults.ctl.card 1
+
+(Replace 1 with your actual analog card number if it's different)
+
+STEP 4: UNMUTE + CONFIGURE ALSA VOLUME
+--------------------------------------
+alsamixer
+
+- Press F6 and select the correct sound card (e.g., card 1)
+- Use arrow keys to adjust volume
+- Press 'M' to unmute if muted
+
+STEP 5: TEST AUDIO
+------------------
+aplay /usr/share/sounds/alsa/Front_Center.wav
+
+If you hear sound, audio is working correctly.
+
+STEP 6: TEST TTS FROM PYTHON
+----------------------------
+Run this inside a Python script or interpreter:
+
+    import pyttsx3
+    engine = pyttsx3.init()
+    engine.say("This is NetAlert speaking")
+    engine.runAndWait()
+
+If you hear the voice, you're good.
+
+OPTIONAL: Backup fallback method using espeak-ng + aplay:
+    import os
+    os.system('echo "Alert" | espeak-ng --stdout | aplay -D plughw:1,0')
+
+======================================================================
+This is a privacy-respecting, offline, text-to-speech setup for Arch.
