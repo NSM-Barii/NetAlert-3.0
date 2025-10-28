@@ -1,0 +1,43 @@
+HOW TO INSTALL SESSION AND OPEN-SOURCE VISUAL STUDIO CODE ON ARCH LINUX
+=======================================================================
+
+1. INSTALL OPEN-SOURCE VISUAL STUDIO CODE (VS CODE OSS)
+-------------------------------------------------------
+VS Code OSS is a telemetry-free, open-source build of Visual Studio Code.
+
+Step 1: Make sure you have 'yay' (AUR helper) installed. If not:
+    sudo pacman -S --needed base-devel git
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si
+
+Step 2: Install VS Code OSS via AUR:
+    yay -S code
+
+Step 3: Launch it:
+    code &
+
+Optional Extensions:
+- Python:          ms-python.python
+- GitHub PRs:      github.vscode-pull-request-github
+- GitLens:         eamodio.gitlens
+- Prettier:        esbenp.prettier-vscode
+
+2. INSTALL SESSION MESSENGER (END-TO-END ENCRYPTED CHAT APP)
+------------------------------------------------------------
+Session is a secure, anonymous messaging app that uses the Oxen network.
+
+Option 1: Install from AUR (recommended for most users)
+    yay -S session-desktop-bin
+
+Option 2: Install via Flatpak (sandboxed version)
+    flatpak install flathub network.loki.Session
+    flatpak run network.loki.Session
+
+Session stores data in:
+    ~/.config/Session
+
+Optional: To back up your Session ID, copy the above folder to a secure location.
+
+------------------------------------------------------------------
+You’re now ready to use both secure development and messaging tools!
