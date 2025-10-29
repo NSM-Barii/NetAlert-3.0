@@ -149,7 +149,8 @@ class Connection_Handler():
 
         # VARS
         verbose = False
-        delay = 1.5
+        RESET = 0.5
+        delay = 0.5
         timeout = 0.5
         online = 0
         count = 0
@@ -278,7 +279,8 @@ class Connection_Handler():
                         
                         # UPDATE
                         online = True
-                        timeout = 0.5
+                        delay = RESET
+                        timeout = RESET
                         count = 0
 
 
@@ -319,6 +321,8 @@ class Connection_Handler():
                         
                         
                         # DELAY
+                        delay = RESET   
+                        timeout = RESET
                         time.sleep(delay)
                     
 
@@ -346,6 +350,8 @@ class Connection_Handler():
 
 
                             #console.print("got --> ", vendor)
+                        
+
                     
 
                     # NOW OFFLINE
@@ -393,6 +399,8 @@ class Connection_Handler():
                         
 
                         # DELAY
+                        delay = RESET   
+                        timeout = RESET
                         time.sleep(delay)
                     
 
@@ -401,10 +409,12 @@ class Connection_Handler():
                     else:
 
                         count += 1
-                        timeout += 0.5
+                        delay += 0.5
+                        timeout += 0.5 if timeout < 2.5 else 2.5
+                        delay += 0.5 if delay < 2.5 else 2.5
                     
 
-                        time.sleep(0.1)
+                        time.sleep(delay)
 
 
                         if verbose:
@@ -654,7 +664,6 @@ class Utilities():
 
             os.system("cls")
 
-    
 
     @staticmethod
     def change_settings():
@@ -668,7 +677,6 @@ class Utilities():
 
             )
     
-
 
     @staticmethod
     def phone_call():
@@ -771,9 +779,6 @@ class Utilities():
             # UNPAUSE
             cls.free = True
 
-
-
- 
 
     @staticmethod
     def push_to_discord(data, verbose=True):
@@ -1054,7 +1059,7 @@ class Utilities():
     @staticmethod
     def get_vendor(mac:str):
         """This class will be responsible for getting the vendor"""
-
+  
         
         # FOR DEBUGIGNG
         verbose = False
@@ -1062,18 +1067,26 @@ class Utilities():
 
         # TRY API FIRST
         url = f"https://api.macvendors.com/{mac}"
-        
+
 
         try:
             response = requests.get(url=url, timeout=3)
 
-            if response.status_code == 200:
+            if response.status_code in {200, 204}:
 
                 if verbose:
                     console.print(f"Successfully retrieved API Key: {response.text}")
 
                 
-                return response.text
+                return response.text if response.text != None else manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
+            
+            else:
+                
+                if verbose:
+                    console.print(response.text)
+                
+                response = manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
+                return response
 
         
         

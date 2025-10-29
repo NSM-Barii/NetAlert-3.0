@@ -154,6 +154,12 @@ class Network_Scanner():
 
                         # GET OS
                         #os = Utilities.get_os(target_ip=target_ip, verbose=1)
+
+
+                        # TESTING
+                        go = True
+                        if go:
+                            console.print(f"{target_ip} -> {host} - {vendor}")
                         
                         
                         # APPEND TO LIST

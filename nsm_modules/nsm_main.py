@@ -49,7 +49,7 @@ class Main():
                         # TESTING
                         from nsm_utilities import TTS
                         TTS.tts_def(letter="start")
-                        TTS.tts_google(say="Welcome to NetAlert 3.0, a Intrusion Prevention System developed by NSM Bari")
+                        #TTS.tts_google(say="Welcome to NetAlert 3.0, a Intrusion Prevention System developed by NSM Bari")
 
                         # MAIN TITLE
                         Main.run_title()
@@ -125,18 +125,22 @@ class Main():
       
 
          # CREATE PROGRAM STATS
-         t1 = pyfiglet.figlet_format(text="          Net", font=font)
-         t2 = pyfiglet.figlet_format(text="       Alert", font=font)
-         console.print(t1, style=c1)
-         console.print(t2, style=c2)
+         try:
+               t1 = pyfiglet.figlet_format(text="          Net", font=font)
+               t2 = pyfiglet.figlet_format(text="       Alert", font=font)
+               console.print(t1, style=c1)
+               console.print(t2, style=c2)
 
 
-         # CREDITS
-         console.print(
-              f"\n      [{c1}]==========================================================================",
-              f"\n      [{c2}]    ==================   Developed by NSM Barii   ==================== [/{c2}]",
-              f"\n      [{c1}]=========================================================================="
-              )
+               # CREDITS
+               console.print(
+                    f"\n      [{c1}]==========================================================================",
+                    f"\n      [{c2}]    ==================   Developed by NSM Barii   ==================== [/{c2}]",
+                    f"\n      [{c1}]=========================================================================="
+                    )
+         
+         except Exception as e:
+          console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
          
          # PROGRAM SPACE

@@ -580,78 +580,88 @@ class Push_Network_Status():
             while True:
 
 
-                # CHECK FOR UPDATES
-                Connection_Handler.daily_update()
 
-                # RESET
-                cls.nodes_online = 0
+                try:
 
 
-                # PULL DATA
-                if leg:
-                    data = Push_Network_Status.get_device_info(verbose=True)
-                
-                # NEW WAY
-                else:
-                    data = Connection_Handler.nodes
-                
+                    # CHECK FOR UPDATES
+                    Connection_Handler.daily_update()
 
-                # ITER
-                for key, value in data.items():
+                    # RESET
+                    cls.nodes_online = 0
 
+
+                    # PULL DATA
+                    if leg:
+                        data = Push_Network_Status.get_device_info(verbose=True)
                     
-                    if verbose:
-                        console.print(value["target_ip"]," --> ", value["status"])
-
-                    # GET VARS
-                    status = value["status"]
-                    target_ip = value["target_ip"]
-                    target_mac = value["target_mac"]
-                    host = value["host"]
-                    vendor = value["vendor"]
-
-
-                    if status == "online":
-                        cls.nodes_online += 1
-
-                    
-                    if verbose:
-                        console.print(target_ip, "-->", vendor)
-                    
-                    
-                    
-                    # APPEND TOTAL COUNT
-                    if target_ip not in cls.nodes:
-
-                        # APPEND
-                        cls.nodes.append(target_ip)
-
-                        # ADD
-                        cls.nodes_count += 1
+                    # NEW WAY
+                    else:
+                        data = Connection_Handler.nodes
                     
 
-                    # PUSH DEVICE INFO
-                    Push_Network_Status.push_device_info(
-                        target_ip=target_ip, 
-                        target_mac=target_mac,
-                        host=host,
-                        vendor=vendor,
-                        status=status
-                        )
-                
-                
-                # SUMMARY
-                summary = {
-                    "nodes_online": cls.nodes_online,
-                    "nodes_total": cls.nodes_count
-                }
-                
 
-                # PUSH DATA
-                Push_Network_Status.push_device_info(summary=summary)
-                
-                # DELAY
-                time.sleep(delay)
+                    # ITER
+                    for key, value in data.items():
+
+                        
+                        if verbose:
+                            console.print(value["target_ip"]," --> ", value["status"])
+
+                        # GET VARS
+                        status = value["status"]
+                        target_ip = value["target_ip"]
+                        target_mac = value["target_mac"]
+                        host = value["host"]
+                        vendor = value["vendor"]
+
+
+                        if status == "online":
+                            cls.nodes_online += 1
+
+                        
+                        if verbose:
+                            console.print(target_ip, "-->", vendor)
+                        
+                        
+                        
+                        # APPEND TOTAL COUNT
+                        if target_ip not in cls.nodes:
+
+                            # APPEND
+                            cls.nodes.append(target_ip)
+
+                            # ADD
+                            cls.nodes_count += 1
+                        
+
+                        # PUSH DEVICE INFO
+                        Push_Network_Status.push_device_info(
+                            target_ip=target_ip, 
+                            target_mac=target_mac,
+                            host=host,
+                            vendor=vendor,
+                            status=status
+                            )
+                    
+                    
+                    # SUMMARY
+                    summary = {
+                        "nodes_online": cls.nodes_online,
+                        "nodes_total": cls.nodes_count
+                    }
+                    
+
+                    # PUSH DATA
+                    Push_Network_Status.push_device_info(summary=summary)
+                    
+                    # DELAY
+                    time.sleep(delay)
+            
+            
+                except Exception as e:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
             
         
 
