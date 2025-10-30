@@ -35,6 +35,79 @@ LOCK = threading.Lock()
 
 
 
+
+
+class LLM():
+    """This class will be responsible for controlling LLM"""
+
+
+    def print():
+
+
+        # START
+        console.print(f"[bold green][+][bold yellow] LLM Background thread started")
+        
+
+        # INITAL TIME
+        time_current = time.time()
+        
+
+
+        # LOOP INDEFINETLY
+        while True:
+
+            try:
+            
+
+                # TIME // PKTS
+                pkts = Network_Sniffer.packet_queue
+                
+
+                # CPU LIMITER
+                if len(pkts) > 10 or time_current > 1:
+
+
+                    # COLOTS
+                    c1 = "bold red"
+                    c2 = "bold green"
+                    c3 = "bold blue"
+
+
+                    # NOW TO CALL LLM
+                    for pkt in pkts:
+
+                        if pkt:
+                            
+                            ip_src = pkt["ip_src"]
+                            ip_dst = pkt["ip_dst"]
+                            port_src = pkt["port_src"]
+                            port_dst = pkt["port_dst"]
+                            pkt_len = pkt["pkt_len"]
+                            pkt_ttl = pkt["pkt_ttl"]
+                            proto = pkt["proto"]
+
+                            data = (f"{ip_src}:{port_src} -> {ip_dst}:{port_dst} - [{c1}]len:[/{c1}]{pkt_len} - [{c1}]ttl:[/{c1}]{pkt_ttl}")
+
+
+                            console.print(f"[bold yellow][+][/bold yellow] {data}")
+            
+
+                    # CLEANSE QUE
+                    with LOCK:
+                        Network_Sniffer.packet_queue = []
+                    time_current = time.time()
+            
+                
+                # CPU BOUND
+                else:
+                    time.sleep(0.0001)
+        
+        
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
+
 class Network_Sniffer():
     """This class will be responsible for sniffing LAN wide traffic to then pass to a model"""
 
@@ -84,7 +157,7 @@ class Network_Sniffer():
             style="bold yellow",
             title="AI Powered IPS",
             expand=False
-                      )
+            )
 
 
         try: 
@@ -125,6 +198,10 @@ class Network_Sniffer():
 
         def parser(pkt):
             """use this to pass the parser off to a seperate thread for crashing issues"""
+
+
+            # LEGACY CONTROLLER
+            leg = False 
 
             
             # CHECK FOR IP LAYER
@@ -202,20 +279,37 @@ class Network_Sniffer():
 
 
                     # PUSH TO SQL
-                    Network_Sniffer.packet_pusher(proto=proto, 
+                    if leg:
+                        Network_Sniffer.packet_pusher(proto=proto, 
                                                 ip_src=ip_src, ip_dst=ip_dst,
                                                 port_src=port_src, port_dst=port_dst,
                                                 pkt_ttl=pkt_ttl, pkt_len=pkt_len
                                                 )
-        
-        t = True
+                    
+                    
+                    # ADD TO QUE FOR PACKET INSPECTION
+                    else:
+                        
+                        # PACKAGE DATA
+                        data = {
+                            "ip_src": ip_src,
+                            "ip_dst": ip_dst,
+                            "port_src": port_src,
+                            "port_dst": port_dst,
+                            "proto": proto,
+                            "pkt_len": pkt_len,
+                            "pkt_ttl": pkt_ttl
+                        }
 
-        if t:
-            threading.Thread(target=parser, args=(pkt,), daemon=True).start()
+
+                        cls.packet_queue.append(data)
+
+
         
-        else:
-            parser()
-    
+        # THREAD IT
+        threading.Thread(target=parser, args=(pkt,), daemon=True).start()
+
+
 
     @classmethod
     def packet_pusher(cls, proto, ip_src, ip_dst, port_src, port_dst, pkt_ttl, pkt_len):
@@ -251,6 +345,10 @@ class Network_Sniffer():
         cls.CONSOLE = CONSOLE
 
 
+        # PACKET INSPECTION QUE // FOR LLM
+        cls.packet_queue = []
+
+
         # INIT CLASS VARS
         cls.network_traffic_normal = []
         cls.network_traffic_anamoly = []
@@ -261,6 +359,10 @@ class Network_Sniffer():
         # GET IFACE
         if get:
             iface = Utilities.get_interface()
+
+
+        # START LLM
+        threading.Thread(target=LLM.print, args=(), daemon=True).start()
 
 
         # START SNIFFING
