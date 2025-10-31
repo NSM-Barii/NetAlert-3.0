@@ -48,8 +48,8 @@ class Main():
 
                         # TESTING
                         from nsm_utilities import TTS
-                        TTS.tts_def(letter="start")
-                        #TTS.tts_google(say="Welcome to NetAlert 3.0, a Intrusion Prevention System developed by NSM Bari")
+                       # TTS.tts_def(letter="start")
+                        TTS.tts_google(say="Welcome to NetAlert 3.0, a Intrusion Prevention System developed by NSM Bari")
 
                         # MAIN TITLE
                         Main.run_title()

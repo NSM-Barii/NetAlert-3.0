@@ -158,7 +158,7 @@ class Network_Scanner():
 
                         # TESTING
                         go = True
-                        if go:
+                        if go and verbose:
                             console.print(f"{target_ip} -> {host} - {vendor}")
                         
                         

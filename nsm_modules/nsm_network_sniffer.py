@@ -12,7 +12,7 @@ console = Console()
 
 
 # NETWORK IMPORTS
-from scapy.all import sniff, IP, TCP, UDP, ICMP
+from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, DNS, BOOTP, SNMP
 import socket, requests
 
 
@@ -77,6 +77,7 @@ class LLM():
                     for pkt in pkts:
 
                         if pkt:
+                
                             
                             ip_src = pkt["ip_src"]
                             ip_dst = pkt["ip_dst"]
@@ -86,7 +87,7 @@ class LLM():
                             pkt_ttl = pkt["pkt_ttl"]
                             proto = pkt["proto"]
 
-                            data = (f"{ip_src}:{port_src} -> {ip_dst}:{port_dst} - [{c1}]len:[/{c1}]{pkt_len} - [{c1}]ttl:[/{c1}]{pkt_ttl}")
+                            data = (f"{proto} - {ip_src}:{port_src} -> {ip_dst}:{port_dst} - [{c1}]len:[/{c1}]{pkt_len} - [{c1}]ttl:[/{c1}]{pkt_ttl}")
 
 
                             console.print(f"[bold yellow][+][/bold yellow] {data}")
@@ -105,6 +106,8 @@ class LLM():
         
             except Exception as e:
                 console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+
 
 
 
@@ -170,7 +173,6 @@ class Network_Sniffer():
 
 
                     # START BACKGROUND THREAD
-                    
                     threading.Thread(target=update, args=(panel, ), daemon=True).start()
                 
 
@@ -200,71 +202,131 @@ class Network_Sniffer():
             """use this to pass the parser off to a seperate thread for crashing issues"""
 
 
+
             # LEGACY CONTROLLER
             leg = False 
 
+
+            try:
             
-            # CHECK FOR IP LAYER
+                # CHECK FOR IP LAYER
+                if pkt.haslayer(IP):
+
+
+
+                    # IP DST AND SRC
+                    ip_src = pkt[IP].src if pkt[IP].src else "unkown"
+                    ip_dst = pkt[IP].dst if pkt[IP].dst else "unkown"
+
+
+
+                    # PROTOCOL // TCP OR UDP // FUCKING SKID
+                    proto = pkt.proto
+
+
+                    # PKT LENGTH AND TTL // SEE IF ITS UNUSUAL
+                    pkt_ttl = pkt.ttl
+                    pkt_len = len(pkt)
+
+
+                    # UDP PORTS
+                    if pkt.haslayer(UDP):
+
+                        port_src = pkt[UDP].sport
+                        port_dst = pkt[UDP].dport
+                        proto = "UDP"
+
+                    
+                    # TCP PORTS
+                    elif pkt.haslayer(TCP):
+
+                        port_src = pkt[TCP].sport
+                        port_dst = pkt[TCP].dport
+                        proto = "TCP"
+
+
+                    # ICMP PORTS
+                    elif pkt.haslayer(ICMP):
+
+                        port_src = pkt[ICMP].type
+                        port_dst = pkt[ICMP].code  
+                        proto = "ICMP"
+                    
+
+                    # ARP PORTS
+                    elif pkt.haslayer(ARP):
+
+                        port_src = pkt[ARP].psrc
+                        port_dst = pkt[ARP].pdst
+                        proto = "ARP"
+
+                    
+                    # DNS PORTS
+                    elif pkt.haslayer(DNS):
+                        port_src = pkt[DNS].sport
+                        port_dst = pkt[DNS].dport
+                        proto = "DNS"
+
+                    
+                    # DHCP PORTS
+                    elif pkt.haslayer(BOOTP):
+                        port_src = pkt[UDP].sport
+                        port_dst = pkt[UDP].dport
+                        proto = "DHCP"
+
+                    
+                    # SNMP PORTS
+                    elif pkt.haslayer(SNMP):
+                        port_src = pkt[SNMP].sport
+                        port_dst = pkt[SNMP].dport
+                        proto = "SNMP"
+
+                    
+                    # NOTHING ELSE
+                    else:
+
+                        port_src = 0    
+                        port_dst = 0
+
+                        # NOTIFY USER
+                        cls.CONSOLE.print(f"else triggered", style="bold red")
+                    
+
+
+
+
+            except Exception as e:
+                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                ip_src = "UNKOWN"
+                ip_dst = "UNKOWN"
+                proto = "UNKOWN"
+            
+
+
             if pkt.haslayer(IP):
-                
+            
 
-                # IP DST AND SRC
-                ip_src = pkt[IP].src
-                ip_dst = pkt[IP].dst
-
-                # PROTOCOL // TCP OR UDP // FUCKING SKID
-                proto = pkt.proto
-
-
-                # PKT LENGTH AND TTL // SEE IF ITS UNUSUAL
-                pkt_ttl = pkt.ttl
-                pkt_len = len(pkt)
-
-
-                # UDP PORTS
-                if pkt.haslayer(UDP):
-
-                    port_src = pkt[UDP].sport
-                    port_dst = pkt[UDP].dport
-
-                
-                # TCP PORTS
-                elif pkt.haslayer(TCP):
-
-                    port_src = pkt[TCP].sport
-                    port_dst = pkt[TCP].dport
-
-
-                # ICMP PORTS
-                elif pkt.haslayer(ICMP):
-
-                    port_src = pkt[ICMP].type
-                    port_dst = pkt[ICMP].code  
-
-                
-                # NOTHING ELSE
-                else:
-
-                    port_src = 0
-                    port_dst = 0
-
-                    # NOTIFY USER
-                    cls.CONSOLE.print(f"else triggered", style="bold red")
+                # PROTOS
+                protos = ["TCP", "UDP", "ARP", "ICMP", "DNS", "DHCP", "SNMP"]
+                proto = proto if proto in protos else "UNKOWN"
                 
 
 
-                # MATCH INT TO PROTO
-                proto = "UDP" if proto == 17 else "TCP" if proto == 6 else "ICMP" if proto == 1 else "IGMP" if proto == 2 else proto
+                # MATCH INT TO PROTO // DEAPPRECIATED FEATURE
+                if leg:
+                    proto = "UDP" if proto == 17 else "TCP" if proto == 6 else "ICMP" if proto == 1 else "IGMP" if proto == 2 else proto
 
-                
+
+                protocols = {
+
+                }
+
+                    
 
 
                 # PREVENT RACE CONDITIONS
                 with LOCK:
-
-                    # SMALL DELAY FOR SQL
-                    #time.sleep(0.5)
-
+                    
 
                     # APPEND TOTAL
                     cls.total_packets += 1
@@ -276,6 +338,7 @@ class Network_Sniffer():
                     
                     if ip_dst not in cls.ips_found:
                         cls.ips_found.append(ip_dst)
+                
 
 
                     # PUSH TO SQL
@@ -303,14 +366,16 @@ class Network_Sniffer():
 
 
                         cls.packet_queue.append(data)
-
+        
 
         
         # THREAD IT
         threading.Thread(target=parser, args=(pkt,), daemon=True).start()
 
 
+    
 
+    # THIS METHOD WILL SOON BE DEAPPRECIATED
     @classmethod
     def packet_pusher(cls, proto, ip_src, ip_dst, port_src, port_dst, pkt_ttl, pkt_len):
         """This method will be responsible for pushing pkt parsed info to model and checking if it is normal or NOT"""

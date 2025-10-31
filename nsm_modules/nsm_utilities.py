@@ -1280,7 +1280,11 @@ class TTS():
                 tts.save("output.mp3")
 
                 #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
-                os.system("mpg123 output.mp3 2>/dev/null")
+                os.system("aplay output.mp3 2>/dev/null")
+
+
+                #console.print("i was able to print")
+                #time.sleep(3)
             
             except Exception as e:
                 console.print(f"[bold red]TTS Driver - Exception Error:[bold yellow] {e}")
@@ -1313,6 +1317,7 @@ class TTS():
             voices = engine.getProperty('voices')
             rate = engine.getProperty('rate')
 
+
             # SET VOLUME
         # volume = engine.getProperty('volume')
 
@@ -1329,31 +1334,25 @@ class TTS():
             # engine.setProperty('volume', 20)
                 engine.setProperty('rate', rate - voice_rate)
             
-            except Exception as e:
-                console.print(e)
-    
 
-            if len(voices) > 1:
-                engine.setProperty('voice', voices[1].id)
-            # console.print("Voice set to 1")
-            
-            else:
-                engine.setProperty('voice', voices[0].id)
-            # console.print("voice set to 0")
-            
-            
-        
-            try:
+                if len(voices) > 1:
+                    engine.setProperty('voice', voices[1].id)
+                # console.print("Voice set to 1")
+                
+                else:
+                    engine.setProperty('voice', voices[0].id)
+                # console.print("voice set to 0")
+                
 
-                # WAIT IN QUEUE
-                while not engine.isBusy():
-                    pass
+                    # WAIT IN QUEUE
+                    while not engine.isBusy():
+                        pass
 
-                # NOW SPEAK
-                engine.say(letter)
-                engine.runAndWait()
-                engine.stop()
-            
+                    # NOW SPEAK
+                    engine.say(letter)
+                    engine.runAndWait()
+                    engine.stop()
+                
 
             except Exception as e:
                 console.print(f"[bold red]Exception Error:[bold yellow] {e}")
