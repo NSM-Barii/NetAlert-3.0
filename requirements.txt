@@ -13,4 +13,10 @@ pyttsx3
 ifcfg
 gTTS
 
+# LLM LIBARIES
+pip install transformers
+pip install onnxruntime
+pip install optimum     # Requires at LEAST  8GB of storage
+
+
 

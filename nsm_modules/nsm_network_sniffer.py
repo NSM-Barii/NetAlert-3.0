@@ -26,6 +26,10 @@ from datetime import datetime
 import pandas as pd, numpy, sqlite3
 
 
+# LLM --> IMPORTS
+from transformers import AutoTokenizer, pipeline
+from optimum.onnxruntime import ORTModelForSeq2SeqLM
+
 # NSM IMPORTS
 from nsm_utilities import Utilities
 
@@ -39,6 +43,21 @@ LOCK = threading.Lock()
 
 class LLM():
     """This class will be responsible for controlling LLM"""
+
+
+    """
+
+    1,000 packets	~100 KB	✅
+    10,000	~1 MB	✅
+    100,000	~10 MB	✅
+    1,000,000	~100 MB	✅ (with chunking)
+
+    """
+
+
+
+
+    
 
 
     def print():
