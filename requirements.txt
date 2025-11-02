@@ -17,6 +17,6 @@ gTTS
 pip install transformers
 pip install onnxruntime
 pip install optimum     # Requires at LEAST  8GB of storage
-
+pip install "optimum[onnxruntime]" --upgrade
 
 
