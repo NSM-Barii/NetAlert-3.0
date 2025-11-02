@@ -53,78 +53,205 @@ class LLM():
     1,000,000	~100 MB	✅ (with chunking)
 
     """
-
-
-
-
     
 
+   
+    @classmethod
+    def llm_summarizer(cls, batch=False, full=False, verbose=True):
+        """This module will be responsible for init and controlling the LLM"""
 
-    def print():
+
+
+        # DEFAULT TASK
+        if batch:
+            prompt = "summarize: review this network traffic batch and briefly describe the main patterns, active protocols, and any unusual or suspicious activity."
+        
+        else:
+            prompt = "summarize: based on all previous batch summaries, describe the overall network behavior, highlight recurring anomalies or device patterns, and point out any unusual or potentially malicious trends."
+        
+
+        query = f"{prompt}: {batch}" if batch else f"{prompt}: {full}"
+
+
+        
+        # THIS IS THE PRETRAINED MODEL THAT YOU DOWNLOADED
+        LLM_NAME = "Xenova/t5-small"
+
+        
+
+        try:
+            # INIT TOKENIZER
+            tokenizer = AutoTokenizer.from_pretrained(LLM_NAME)
+
+            # INIT MODEL
+            model = ORTModelForSeq2SeqLM.from_pretrained(LLM_NAME)
+
+            
+            # CREATE SUMMARIZER
+            summarizer = pipeline(task="summarization", model=model, tokenizer=tokenizer)
+
+            # QUERY // GET RESPONSE
+            response = summarizer(query, max_length=80, clean_up_tokenization_spaces=True)
+
+
+            # VERBOSE
+            if verbose:
+                console.print(response)
+            
+
+            return response if response else "Failed"
+    
+        
+
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+        
+
+                
+
+        return "Failed"
+        
+
+
+
+
+    @classmethod
+    def print(cls, verbose=True):
 
 
         # START
         console.print(f"[bold green][+][bold yellow] LLM Background thread started")
+
+
+        # COLOTS
+        c1 = "bold red"
+        c2 = "bold green"
+        c3 = "bold blue"
+
+
         
 
+        # INIT
+        pkts = []
+        summary_batch = []
+        panel = Panel(renderable=f"[{c1}]pkts:[{c2}] {len(pkts)} - [{c1}]batch amount:[{c2}] {len(summary_batch)}")
+
+
+
+
+
         # INITAL TIME
+        time_elapsed = time.time() 
         time_current = time.time()
+        time.sleep(1)
+
+        time_current = time.time() - time_current
+        time_current = float((f"{time_current:.1f}"))
+        summaries = []
         
 
 
         # LOOP INDEFINETLY
-        while True:
+        with Live(panel, console=console, refresh_per_second=1):
+                
+            while True:
 
-            try:
-            
-
-                # TIME // PKTS
-                pkts = Network_Sniffer.packet_queue
+                try:
                 
 
-                # CPU LIMITER
-                if len(pkts) > 10 or time_current > 1:
+                    #  PKTS // PKT_FULL
+                    pkts = Network_Sniffer.packet_queue
 
 
-                    # COLOTS
-                    c1 = "bold red"
-                    c2 = "bold green"
-                    c3 = "bold blue"
+                    # FOR VERBOSE // DEBUGGING
+                    if verbose:
+                        console.print("testinggggggggggg")
 
 
-                    # NOW TO CALL LLM
-                    for pkt in pkts:
 
-                        if pkt:
-                
+                        # NOW TO CALL LLM
+                        for pkt in pkts:
+
+                            if pkt:
+
+
+                                # EXTRACT META-DATA
+                                ip_src = pkt["ip_src"]
+                                ip_dst = pkt["ip_dst"]
+                                port_src = pkt["port_src"]
+                                port_dst = pkt["port_dst"]
+                                pkt_len = pkt["pkt_len"]
+                                pkt_ttl = pkt["pkt_ttl"]
+                                proto = pkt["proto"]
                             
-                            ip_src = pkt["ip_src"]
-                            ip_dst = pkt["ip_dst"]
-                            port_src = pkt["port_src"]
-                            port_dst = pkt["port_dst"]
-                            pkt_len = pkt["pkt_len"]
-                            pkt_ttl = pkt["pkt_ttl"]
-                            proto = pkt["proto"]
 
-                            data = (f"{proto} - {ip_src}:{port_src} -> {ip_dst}:{port_dst} - [{c1}]len:[/{c1}]{pkt_len} - [{c1}]ttl:[/{c1}]{pkt_ttl}")
+                                # FORM PKT LINE
+                                data = (f"{proto} - {ip_src}:{port_src} -> {ip_dst}:{port_dst} - [{c1}]len:[/{c1}]{pkt_len} - [{c1}]ttl:[/{c1}]{pkt_ttl}")
 
 
-                            console.print(f"[bold yellow][+][/bold yellow] {data}")
+                                
+                                # OUTPUT
+                                if verbose:
+                                    console.print(f"[bold yellow][+][/bold yellow] {data}")
+
+                            
+                                # UPDATE PANEL
+                                time_elapsed = time.time() - time_elapsed
+                                panel.renderable = (f"[{c1}]Pkts:[{c2}] {len(pkts)} - [{c1}]Batch amount:[{c2}] {len(summaries)} - [{c1}]Elapsed Time:[{c2}] {time_elapsed:.1f}  -  [{c1}]Developed by NSM Barii")
+
+
+                        # CLEANSE QUE
+                        with LOCK:
+                            #Network_Sniffer.packet_queue = []
+                            time_current = time.time()
+
+                    
+
+                    
+                    # SUMMARIZE LAST 1K PACKETS // WITH LLM
+                    if len(pkts) > 1000:
+                        console.print(len(pkts))
+
+
+                        # GET SUMMARY
+                        summary_batch = LLM.llm_summarizer(batch=pkts, verbose=True)
+
+
+                        # APPEND THE SUMMARY AND TRACK
+                        summaries.append(summary_batch)
+                        with LOCK:
+                            pkts = []
+
+                        
+
+                        # GET BATCH SUMMARY
+                        if len(summaries) >= 100:
+    
+
+                            # GET FULL  
+                            summary_full = LLM.llm_summarizer(full=True,  verbose=True)
+
+                            
+                            # CLEAN VARS 
+                            summaries = [] 
+
+                            
+                            # VERBOSE
+                            if verbose:
+                                console.print(f"[bold green]LLM Response:[/bold green] {summary_full}")
+                            
+                        
+
+
+
+
+                    # CPU DELAY
+                    time.sleep(1)  
+
             
-
-                    # CLEANSE QUE
-                    with LOCK:
-                        Network_Sniffer.packet_queue = []
-                    time_current = time.time()
             
-                
-                # CPU BOUND
-                else:
-                    time.sleep(0.0001)
-        
-        
-            except Exception as e:
-                console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                except Exception as e:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
 
 

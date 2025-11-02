@@ -1,0 +1,28 @@
+✅ Minimal Install (CPU-Only, ONNX Inference)
+------------------------------------------------
+Run this in your virtual environment:
+
+pip install transformers optimum onnxruntime
+
+✅ Download the T5 Model (Pre-exported for ONNX)
+------------------------------------------------
+git clone https://huggingface.co/Xenova/t5-small
+
+✅ Sample Code (CPU, summarization)
+------------------------------------------------
+from transformers import AutoTokenizer, pipeline
+from optimum.onnxruntime import ORTModelForSeq2SeqLM
+
+tokenizer = AutoTokenizer.from_pretrained("Xenova/t5-small")
+model = ORTModelForSeq2SeqLM.from_pretrained("Xenova/t5-small")
+
+summarizer = pipeline("summarization", model=model, tokenizer=tokenizer)
+
+text = "summarize: This is a sample list of packets captured on the network. Some were normal, some had odd TTLs."
+print(summarizer(text, max_length=64)[0]['summary_text'])
+
+✅ You're Good
+------------------------------------------------
+- No torch
+- No GPU
+- Runs fully on CPU using ONNX

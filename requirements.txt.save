@@ -1,0 +1,23 @@
+requests
+scapy
+manuf
+ipaddress
+requests
+rich
+pathlib
+pyfiglet
+pandas
+numpy
+gtts
+pyttsx3
+ifcfg
+gTTS
+
+# LLM LIBARIES
+pip install transformers
+pip install onnxruntime
+pip install optimum     # Requires at LEAST  8GB of storage
+pip install "optimum[onnxruntime]" --upgrade
+
+
+
