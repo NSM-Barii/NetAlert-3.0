@@ -28,7 +28,7 @@ import pandas as pd, numpy, sqlite3
 
 # NSM IMPORTS
 from nsm_utilities import Utilities, Connection_Handler
-from nsm_network_sniffer import Network_Sniffer
+#from nsm_network_sniffer import Network_Sniffer
 from nsm_files import File_Handling, Push_Network_Status
 
 

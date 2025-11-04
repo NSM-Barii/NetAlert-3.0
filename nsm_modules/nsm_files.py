@@ -380,6 +380,48 @@ class Push_Network_Status():
                 console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
                 break
+    
+
+
+
+    @classmethod
+    def push_device_info_new(cls, data, verbose=True):
+        """This newer method wil be responsible for pushing device info in a better more up to date way with less errors"""
+
+
+        try:
+
+            File_Handling.create_base_dir()
+
+
+            # MAKE SURE DIR EXISTS
+            while True:
+                if cls.base_dir:
+
+
+                    path = cls.base_dir / "nodes.json"
+
+                    with open(path, "w") as file:
+                        json.dump(data, file, indent=4)
+
+
+                        # VERBOSE
+                        if verbose:
+                            console.print("Successfully pushed new data", style="bold green")
+                        
+                        break
+
+
+
+
+                # MAKE DEFAULT DIR 
+                else:
+
+                    cls.base_dir = File_Handling.create_base_dir(get=True, verbose=True) 
+        
+
+        except Exception as e:
+            console.print(f"[bold red] Exception Error:[bold yellow] {e}")
 
 
     @classmethod
@@ -548,7 +590,7 @@ class Push_Network_Status():
                 console.print(f"[bold red]push_device_info - Exception Error:[bold yellow] {e}")
 
                 break
-
+    
     
     @classmethod
     def get_network_summary(cls, delay=5, verbose=False):
@@ -636,13 +678,14 @@ class Push_Network_Status():
                         
 
                         # PUSH DEVICE INFO
-                        Push_Network_Status.push_device_info(
-                            target_ip=target_ip, 
-                            target_mac=target_mac,
-                            host=host,
-                            vendor=vendor,
-                            status=status
-                            )
+                        if leg:
+                            Push_Network_Status.push_device_info(
+                                target_ip=target_ip, 
+                                target_mac=target_mac,
+                                host=host,
+                                vendor=vendor,
+                                status=status
+                                )
                     
                     
                     # SUMMARY
@@ -650,6 +693,11 @@ class Push_Network_Status():
                         "nodes_online": cls.nodes_online,
                         "nodes_total": cls.nodes_count
                     }
+                    
+
+
+                    # NOW PUSH ALL INFO AT ONCE <-- MORE MODERN WAY
+                    
                     
 
                     # PUSH DATA
@@ -660,7 +708,7 @@ class Push_Network_Status():
             
             
                 except Exception as e:
-                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e} - {target_ip}")
 
             
         

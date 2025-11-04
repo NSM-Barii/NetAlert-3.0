@@ -27,8 +27,8 @@ import pandas as pd, numpy, sqlite3
 
 
 # LLM --> IMPORTS
-from transformers import AutoTokenizer, pipeline
-from optimum.onnxruntime import ORTModelForSeq2SeqLM
+#from transformers import AutoTokenizer, pipeline
+#from optimum.onnxruntime import ORTModelForSeq2SeqLM
 
 # NSM IMPORTS
 from nsm_utilities import Utilities
@@ -43,6 +43,12 @@ LOCK = threading.Lock()
 
 class LLM():
     """This class will be responsible for controlling LLM"""
+
+
+
+    # LLM --> IMPORTS
+    from transformers import AutoTokenizer, pipeline
+    from optimum.onnxruntime import ORTModelForSeq2SeqLM
 
 
     """

@@ -13,7 +13,6 @@ from rich.console import Console
 from nsm_files import Push_Network_Status, File_Handling
 from nsm_utilities import Utilities, Connection_Handler
 from nsm_network_scanner import Network_Scanner
-from nsm_network_scanner import Network_Sniffer
 from nsm_server import Server
 
 
