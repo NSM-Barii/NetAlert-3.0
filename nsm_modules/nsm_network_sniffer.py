@@ -27,8 +27,14 @@ import pandas as pd, numpy, sqlite3
 
 
 # LLM --> IMPORTS
+<<<<<<< HEAD
 #from transformers import AutoTokenizer, pipeline
 #from optimum.onnxruntime import ORTModelForSeq2SeqLM
+=======
+from transformers import AutoTokenizer
+from optimum.onnxruntime import ORTModelForSeq2SeqLM, pipeline
+
+>>>>>>> 628de2c (Partial)
 
 # NSM IMPORTS
 from nsm_utilities import Utilities
@@ -60,8 +66,6 @@ class LLM():
 
     """
     
-
-   
     @classmethod
     def llm_summarizer(cls, batch=False, full=False, verbose=True):
         """This module will be responsible for init and controlling the LLM"""
@@ -86,6 +90,7 @@ class LLM():
         
 
         try:
+
             # INIT TOKENIZER
             tokenizer = AutoTokenizer.from_pretrained(LLM_NAME)
 
@@ -97,7 +102,8 @@ class LLM():
             summarizer = pipeline(task="summarization", model=model, tokenizer=tokenizer)
 
             # QUERY // GET RESPONSE
-            response = summarizer(query, max_length=80, clean_up_tokenization_spaces=True)
+            response = summarizer(query)
+            
 
 
             # VERBOSE
@@ -116,13 +122,12 @@ class LLM():
                 
 
         return "Failed"
-        
 
 
 
 
     @classmethod
-    def print(cls, verbose=True):
+    def print(cls, verbose=False):
 
 
         # START
@@ -243,16 +248,18 @@ class LLM():
 
                             
                             # VERBOSE
-                            if verbose:
-                                console.print(f"[bold green]LLM Response:[/bold green] {summary_full}")
+                            #if verbose:
+                            console.print(f"[bold green]LLM Response:[/bold green] {summary_full}")
+
                             
-                        
-
-
 
 
                     # CPU DELAY
                     time.sleep(1)  
+
+                    # UPDATE PANEL
+                    time_elapsed = time.time() - time_elapsed
+                    panel.renderable = (f"[{c1}]Pkts:[{c2}] {len(pkts)} - [{c1}]Batch amount:[{c2}] {len(summaries)} - [{c1}]Elapsed Time:[{c2}] {time_elapsed:.1f}  -  [{c1}]Developed by NSM Barii")
 
             
             
@@ -589,5 +596,43 @@ class Network_Sniffer():
 
 if __name__ == "__main__":
 
-    Network_Sniffer.main(get=True)
+
+    go = 2
     
+    if go == 2:
+
+        from optimum.onnxruntime import ORTModelForSeq2SeqLM
+        from transformers import AutoTokenizer
+        import warnings
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        # Load ONNX model + tokenizer
+        tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
+        model = ORTModelForSeq2SeqLM.from_pretrained("google/flan-t5-base", export=True)
+
+        # Clean input as a list of lines (not a tuple object)
+        lines = [
+            "- TCP - 192.168.1.2:44321 --> 8.8.8.8:443 - TTL: 64  Len: 150",
+            "- TCP - 192.168.1.2:44322 --> 8.8.8.8:443 - TTL: 64  Len: 160",
+            "- UDP - 192.168.1.5:49812 --> 1.1.1.1:53 - TTL: 128  Len: 90",
+            "- UDP - 192.168.1.5:49813 --> 1.1.1.1:53 - TTL: 128  Len: 94",
+            "- ICMP - 192.168.1.7 --> 192.168.1.1 - TTL: 64  Len: 98"
+        ]
+
+        # Format prompt correctly
+        prompt = "summarize this network log in 3 bullet points:\n" + "\n".join(lines)
+
+        # Tokenize and generate
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
+        outputs = model.generate(**inputs, max_length=200)
+
+        # Show result
+        summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print("LLM Output:\n", summary)
+
+
+
+    else:
+        Network_Sniffer.main(get=True)
+    2
