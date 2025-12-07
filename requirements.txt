@@ -6,17 +6,24 @@ requests
 rich
 pathlib
 pyfiglet
-pandas
-numpy
 gtts
 pyttsx3
 ifcfg
-gTTS
+
+# VOICE LIBARIES // apt install ffmpeg
+#pvporcupine 
+vosk
+sounddevice
+samplerate
+
+
 
 # LLM LIBARIES
-pip install transformers
-pip install onnxruntime
-pip install optimum     # Requires at LEAST  8GB of storage
-pip install "optimum[onnxruntime]" --upgrade
+#pandas
+#numpy
+#transformers
+#onnxruntime
+#optimum     # Requires at LEAST  8GB of storage
+#"optimum[onnxruntime]" --upgrade
 
 

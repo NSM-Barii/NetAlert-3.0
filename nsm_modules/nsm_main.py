@@ -98,7 +98,6 @@ class Main():
                         Server.begin_web_server(iface=iface, local_ip=local_ip)
 
 
-
                         #while True:
                             #  pass
 

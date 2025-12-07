@@ -1279,8 +1279,13 @@ class TTS():
                 tts = gTTS(say)
                 tts.save("output.mp3")
 
-                #subprocess.run(["mpg123", "output.mp3", "2>/dev/null"])
-                os.system("aplay output.mp3 2>/dev/null")
+                subprocess.run(
+                    ["mpg123", "output.mp3"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+
+                #os.system("aplay output.mp3 2>/dev/null")
 
 
                 #console.print("i was able to print")
@@ -1371,7 +1376,11 @@ if __name__ == "__main__":
     
 
     # SET
-    use = 3
+    use = 4
+
+
+    if use == 4:
+        TTS.tts_google(say="yes sir, i will no begin to get to work.")
 
 
 
