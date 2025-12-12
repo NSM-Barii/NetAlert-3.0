@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YODA - Voice Activated IDS</title>
+    <link rel="stylesheet" href="css/yoda.css">
+</head>
+<body>
+    <!-- Matrix rain background -->
+    <canvas id="matrix"></canvas>
+
+    <!-- Scanline effect -->
+    <div class="scanline"></div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo">
+                    <span class="glitch" data-text="YODA">YODA</span>
+                </div>
+                <div class="subtitle">Voice Activated Intrusion Detection System</div>
+                <div class="status-indicator">
+                    <span class="pulse"></span>
+                    <span id="systemStatus">SYSTEM ACTIVE</span>
+                </div>
+            </div>
+
+            <div class="header-stats">
+                <div class="stat-box">
+                    <div class="stat-label">UPTIME</div>
+                    <div class="stat-value" id="uptime">00:00:00</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">THREATS</div>
+                    <div class="stat-value" id="threats">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">SCANS/SEC</div>
+                    <div class="stat-value" id="scanRate">0</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main dashboard -->
+        <div class="dashboard">
+            <!-- Network Summary Panel -->
+            <div class="panel summary-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">◉</span>
+                    NETWORK OVERVIEW
+                </div>
+                <div class="panel-body">
+                    <div class="summary-grid">
+                        <div class="summary-card online">
+                            <div class="card-icon">●</div>
+                            <div class="card-data">
+                                <div class="card-value" id="nodesOnline">0</div>
+                                <div class="card-label">NODES ONLINE</div>
+                            </div>
+                        </div>
+                        <div class="summary-card total">
+                            <div class="card-icon">◆</div>
+                            <div class="card-data">
+                                <div class="card-value" id="nodesTotal">0</div>
+                                <div class="card-label">TOTAL NODES</div>
+                            </div>
+                        </div>
+                        <div class="summary-card uptime">
+                            <div class="card-icon">▲</div>
+                            <div class="card-data">
+                                <div class="card-value" id="uptimePercent">0%</div>
+                                <div class="card-label">NETWORK UPTIME</div>
+                            </div>
+                        </div>
+                        <div class="summary-card bandwidth">
+                            <div class="card-icon">≡</div>
+                            <div class="card-data">
+                                <div class="card-value" id="bandwidth">0 MB/s</div>
+                                <div class="card-label">BANDWIDTH</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal/Log Panel -->
+            <div class="panel terminal-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">▶</span>
+                    SYSTEM LOG
+                    <button class="clear-log" onclick="clearLog()">CLEAR</button>
+                </div>
+                <div class="panel-body">
+                    <div id="terminal" class="terminal">
+                        <div class="log-entry">[SYSTEM] YODA IDS initialized...</div>
+                        <div class="log-entry">[INFO] Monitoring network traffic...</div>
+                        <div class="log-entry">[SUCCESS] All systems operational</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="panel controls-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">⚙</span>
+                    CONTROLS
+                </div>
+                <div class="panel-body">
+                    <div class="control-group">
+                        <input type="text" id="searchFilter" placeholder="[SEARCH] Filter nodes..." class="control-input">
+                        <select id="statusFilter" class="control-select">
+                            <option value="">ALL STATUS</option>
+                            <option value="online">ONLINE</option>
+                            <option value="offline">OFFLINE</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            <input type="checkbox" id="autoRefresh" checked>
+                            <span>AUTO-REFRESH</span>
+                        </label>
+                        <input type="number" id="refreshInterval" value="2" min="1" max="60" class="control-input small">
+                        <span class="control-unit">SEC</span>
+                    </div>
+                    <div class="control-group">
+                        <button class="btn btn-primary" onclick="manualRefresh()">⟳ REFRESH NOW</button>
+                        <button class="btn btn-danger" onclick="emergencyLockdown()">🔒 LOCKDOWN</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Node List Panel -->
+            <div class="panel nodes-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">◈</span>
+                    DETECTED NODES
+                    <span class="node-count" id="nodeCount">0 NODES</span>
+                </div>
+                <div class="panel-body">
+                    <div class="table-container">
+                        <table class="nodes-table">
+                            <thead>
+                                <tr>
+                                    <th>STATUS</th>
+                                    <th>IP ADDRESS</th>
+                                    <th>HOSTNAME</th>
+                                    <th>MAC ADDRESS</th>
+                                    <th>VENDOR</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nodesTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <span>YODA v3.0</span>
+                <span class="separator">|</span>
+                <span>NetAlert Security Monitoring</span>
+            </div>
+            <div class="footer-center">
+                <span>Last Update: <span id="lastUpdate">--:--:--</span></span>
+            </div>
+            <div class="footer-right">
+                <span id="connectionStatus" class="connected">◉ CONNECTED</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Audio for effects -->
+    <audio id="alertSound" preload="auto">
+        <source src="assets/alert.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="js/matrix.js"></script>
+    <script src="js/yoda.js"></script>
+</body>
+</html>
