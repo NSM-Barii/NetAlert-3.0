@@ -1,5 +1,5 @@
 # DISCLAMER - WHILE ALL PYTHON MODULES ARE MADE BY ME (NSM BARII), ALL HTML MODULES ARE CREATED WITH AI
-
+![alt text](image-1.png)
 # NetAlert Dashboard (WebSocket Edition) 
 
 A real-time network status dashboard for **NetAlert 3.0**, supporting both HTTP polling and WebSocket live updates.

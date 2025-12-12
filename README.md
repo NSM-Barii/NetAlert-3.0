@@ -1,36 +1,37 @@
-# 🎯 YODA - Voice Activated IDS
+# Yoda - Voice Activated IDS
+
+![Yoda Banner](banner.png)
 
 > **Formerly NetAlert-3.0**
 
-YODA is a voice-activated **Intrusion Detection System** designed for real-time LAN monitoring. Built with a hacker-themed dashboard and live network visualization, YODA tracks every device on your network and provides instant status updates.
+YODA is a voice-activated **Intrusion Detection System** designed for real-time LAN monitoring. The core feature is **voice control** - use natural language commands to manage your network, including kicking devices off your network, querying the number of active devices, and requesting detailed node information. All data is visualized through a hacker-themed dashboard with live network monitoring and Matrix-style effects.
 
-**🤖 AI-Powered (Coming Soon)** - We're working on integrating AI for intelligent threat detection and anomaly analysis. Contributions welcome!
-
----
-
-## ✨ Features
-
-- 🔍 **Real-time device discovery** via ARP scanning
-- 🎨 **Hacker-themed web dashboard** with Matrix effects
-- 📊 **Live monitoring** of IP, MAC, hostname, vendor info
-- 🗣️ **Voice commands** (hold spacebar to activate)
-- 🔴 **Online/Offline tracking** for all network nodes
-- ⚡ **No symlinks required** - data served directly from memory
-- 🌐 **Cross-platform** support (Linux, macOS, Windows)
+**🤖 AI-Powered (Coming Soon)** - Integrating AI for intelligent threat detection and anomaly analysis. Contributions welcome!
 
 ---
 
-## 🚀 Quick Start
+## Features
+
+- Real-time device discovery via ARP scanning
+- Hacker-themed web dashboard with Matrix effects
+- Live monitoring of IP, MAC, hostname, vendor info
+- Voice commands for network management
+- Online/Offline tracking for all network nodes
+
+---
+
+## Quick Start
 
 1. **Clone and navigate**
    ```bash
-   cd nsm_modules
+   git clone https://github.com/nsm-barii/yoda.git
+   cd yoda/nsm_modules
    ```
 
 2. **Setup virtual environment**
    ```bash
    python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
    ```
 
 3. **Install dependencies**
@@ -38,12 +39,21 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
    pip install -r ../requirements.txt
    ```
 
-4. **Run YODA**
+4. **Install mpg123 (required for voice commands)**
+   ```bash
+   # Debian/Ubuntu
+   sudo apt install mpg123
+
+   # Arch
+   sudo pacman -S mpg123
+   ```
+
+5. **Run YODA**
    ```bash
    sudo venv/bin/python nsm_main.py
    ```
 
-5. **Access the dashboard**
+6. **Access the dashboard**
    - The program will prompt you for:
      - **Interface** (e.g., `eth0`, `wlan0`)
      - **Subnet** (e.g., `192.168.1.0/24`)
@@ -52,47 +62,25 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
 
 ---
 
-## 🎮 Usage
+## Usage
 
 - **Auto-refresh**: Dashboard updates every 2 seconds (configurable)
 - **Search & Filter**: Find nodes by IP, hostname, vendor, or MAC
-- **Voice Commands**: Hold spacebar and say "refresh", "lockdown", or "clear"
 - **Inspect Nodes**: Click INSPECT to view detailed device information
 - **Emergency Lockdown**: Visual alert system (future: actual network blocking)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are **welcome**, especially for:
-- 🤖 **AI integration** for threat detection
-- 🔒 **Automated blocking/prevention** features
-- 🎤 **Enhanced voice commands**
-- 📡 **Port scanning integration**
+Contributions are welcome, especially for:
+- AI integration for threat detection
+- Automated blocking/prevention features
+- Enhanced voice commands
+- Port scanning integration
 
-Submit PRs to [github.com/nsm-barii/netalert-3.0](https://github.com/nsm-barii/netalert-3.0)
-
----
-
-## 📋 Requirements
-
-- Python 3.x
-- Scapy
-- Rich (for CLI)
-- See `requirements.txt` for full dependencies
+Submit PRs to [github.com/nsm-barii/yoda](https://github.com/nsm-barii/yoda)
 
 ---
 
-## 📁 Project Structure
-
-```
-nsm_modules/     # Backend Python modules
-web_modules/     # Frontend (HTML/CSS/JS)
-  ├── yoda.html  # Main dashboard
-  ├── css/       # Styles
-  └── js/        # JavaScript + Matrix effects
-```
-
----
-
-**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/netalert-3.0) | Contributions Welcome
+**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/yoda) | Contributions Welcome
