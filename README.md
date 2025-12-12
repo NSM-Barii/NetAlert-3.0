@@ -1,5 +1,5 @@
 # 🎯 YODA - Voice Activated IDS
-
+file:///var/mobile/Library/SMS/Attachments/87/07/367BB9D7-8143-4EBF-B154-813FD5017BCB/Image%2012-12-25%20at%201.55%E2%80%AFAM.png
 > **Formerly NetAlert-3.0**
 
 YODA is a voice-activated **Intrusion Detection System** designed for real-time LAN monitoring. The core feature is **voice control** - use natural language commands to manage your network, including kicking devices off your network, querying the number of active devices, and requesting detailed node information. All data is visualized through a hacker-themed dashboard with live network monitoring and Matrix-style effects.
