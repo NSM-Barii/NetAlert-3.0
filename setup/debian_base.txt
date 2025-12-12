@@ -1,5 +1,7 @@
 🎯 How to Get pyttsx3 Text-to-Speech Working on Kali Linux (with Audio Fixes)
 
+mpg123
+
 ✅ Step 1: Install Required Packages
 ------------------------------------
 Run this command to install audio and speech tools:

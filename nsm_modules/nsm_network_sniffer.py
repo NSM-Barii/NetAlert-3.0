@@ -23,21 +23,18 @@ from datetime import datetime
 
 
 # ML --> IMPORTS
-import pandas as pd, numpy, sqlite3
+#import pandas as pd, numpy, sqlite3
 
 
 # LLM --> IMPORTS
-<<<<<<< HEAD
 #from transformers import AutoTokenizer, pipeline
 #from optimum.onnxruntime import ORTModelForSeq2SeqLM
-=======
-from transformers import AutoTokenizer
-from optimum.onnxruntime import ORTModelForSeq2SeqLM, pipeline
+#from transformers import AutoTokenizer
+#from optimum.onnxruntime import ORTModelForSeq2SeqLM, pipeline
 
->>>>>>> 628de2c (Partial)
 
 # NSM IMPORTS
-from nsm_utilities import Utilities
+from nsm_modules.nsm_utilities import Utilities
 
 
 # PREVENT RACE CONIDTIONS

@@ -3,16 +3,13 @@
 
 
 # UI IMPORTS
-from rich.table import Table
-from rich.panel import Panel
-from rich.live import Live
 from rich.console import Console
 console = Console()
 
 
 # NETWORK IMPORTS
-import socket, requests, manuf, ifcfg
-from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf, sr1
+import socket, requests, manuf
+from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf
 #import nmap
 
 
@@ -31,7 +28,7 @@ import pyttsx3
 
 
 # NSM IMPORTS
-from nsm_files import File_Handling, Push_Network_Status
+from nsm_modules.nsm_files import File_Handling, Push_Network_Status
 
 
 
@@ -1376,7 +1373,8 @@ if __name__ == "__main__":
 
 
     if use == 4:
-        TTS.tts_google(say="yes sir, i will no begin to get to work.")
+        TTS.tts_google(say="Caitlyn needs to shut the fuck up, like right fucking now, that singinig shit ant for here.")
+        console.print("i worked")
 
 
 

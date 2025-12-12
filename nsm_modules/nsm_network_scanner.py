@@ -3,8 +3,6 @@
 
 
 # UI IMPORTS
-import pyfiglet
-from rich.table import Table
 from rich.panel import Panel
 from rich.live import Live
 from rich.console import Console
@@ -12,24 +10,20 @@ console = Console()
 
 
 # NETWORK IMPORTS
-from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, srp, Ether, sr1
-import socket, requests
+from scapy.all import sniff, IP, ICMP, ARP, srp, Ether, sr1
 
 
 # ETC IMPORTS
-from concurrent.futures import ThreadPoolExecutor
 import threading, time
-from datetime import datetime
 
 
 # ML --> IMPORTS
-import pandas as pd, numpy, sqlite3
 
 
 # NSM IMPORTS
-from nsm_utilities import Utilities, Connection_Handler
+from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 #from nsm_network_sniffer import Network_Sniffer
-from nsm_files import File_Handling, Push_Network_Status
+from nsm_modules.nsm_files import Push_Network_Status
 
 
 # PREVENT RACE CONIDTIONS
@@ -120,7 +114,7 @@ class Network_Scanner():
 
 
         # ANNOUNCE
-        from nsm_utilities import TTS
+        from nsm_modules.nsm_utilities import TTS
         TTS.tts_google("Starting")
         
 

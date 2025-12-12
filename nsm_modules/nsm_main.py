@@ -3,17 +3,15 @@
 
 
 # IMPORTS
-import scapy, manuf, ipaddress
-import requests, rich, pathlib, pyfiglet, pandas, numpy, gtts, pyttsx3, threading, time
-from datetime import datetime
+import pyfiglet, time
 from rich.console import Console
 
 
 # NSM IMPORTS
-from nsm_files import Push_Network_Status, File_Handling
-from nsm_utilities import Utilities, Connection_Handler
-from nsm_network_scanner import Network_Scanner
-from nsm_server import Server
+from nsm_modules.nsm_files import Push_Network_Status
+from nsm_modules.nsm_utilities import Utilities, Connection_Handler
+from nsm_modules.nsm_network_scanner import Network_Scanner
+from nsm_modules.nsm_server import Server
 
 
 # CONSTANTS
@@ -46,7 +44,7 @@ class Main():
 
 
                         # TESTING
-                        from nsm_utilities import TTS
+                        from nsm_modules.nsm_utilities import TTS
                        # TTS.tts_def(letter="start")
                         TTS.tts_google(say="Welcome to NetAlert 3.0, a Intrusion Prevention System developed by NSM Bari")
 

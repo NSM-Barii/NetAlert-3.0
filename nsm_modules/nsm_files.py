@@ -9,7 +9,7 @@ from rich.table import Table
 from rich.live import Live
 from rich.console import Console
 console = Console()
-import http.client
+
 
 # ETC IMPORTS
 import os, time, threading
@@ -663,7 +663,7 @@ class Push_Network_Status():
 
 
             # IMPORT
-            from nsm_utilities import Connection_Handler
+            from nsm_modules.nsm_utilities import Connection_Handler
 
  
             # PRINT
