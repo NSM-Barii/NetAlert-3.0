@@ -16,7 +16,7 @@ from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf
 
 # ETC IMPORTS
 import sqlite3, os, threading, time, random, json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta; from pathlib import Path
 import argparse, subprocess
 
 
@@ -1063,6 +1063,8 @@ class Utilities():
         # TRY API FIRST
         url = f"https://api.macvendors.com/{mac}"
 
+        manuf_path = str(Path(__file__).parent / "manuf.txt")
+
 
         try:
             response = requests.get(url=url, timeout=3)
@@ -1073,7 +1075,7 @@ class Utilities():
                     console.print(f"Successfully retrieved API Key: {response.text}")
 
                 
-                return response.text if response.text != None else manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
+                return response.text if response.text != None else manuf.MacParser(manuf_path).get_manuf_long(mac=mac)
             
             else:
                 
@@ -1095,7 +1097,7 @@ class Utilities():
             
             #response = vendors.lookup(mac=mac) if vendors.lookup(mac=mac) else None
 
-            response = manuf.MacParser("manuf.txt").get_manuf_long(mac=mac)
+            response = manuf.MacParser(manuf_path).get_manuf_long(mac=mac)
  
  
     @classmethod

