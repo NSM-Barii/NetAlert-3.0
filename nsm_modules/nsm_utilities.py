@@ -637,8 +637,6 @@ class Connection_Handler():
             time.sleep(61)
 
 
-
-
 class Utilities():
     """This will be responsible for common utilities"""
 
@@ -1239,8 +1237,6 @@ class Utilities():
             # IF VERBOSE
             if verbose:
                 console.print(f"Successufully commited changes to SQL DB", style="bold green")
-
-
 
 
 

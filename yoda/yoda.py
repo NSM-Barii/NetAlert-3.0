@@ -28,7 +28,8 @@ def find_mic():
                 continue
     raise RuntimeError("❌ No usable mic found.")
 
-device_index, native_rate = 2, 48000
+print(find_mic())
+device_index, native_rate = 0, 48000
 
 # === RECORDING ===
 def record_block(seconds):

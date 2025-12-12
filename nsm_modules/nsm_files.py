@@ -381,6 +381,56 @@ class Push_Network_Status():
 
                 break
     
+    
+
+    @classmethod
+    def get_device_info_new(cls, data, verbose=False):
+        """
+        Docstring for get_device_info_new
+        
+        :param cls: Push_Network_Status()
+        :param data: pass data to be compared against
+        :param verbose: verbose for function output
+        """
+
+        try:
+
+            File_Handling.create_base_dir()
+
+
+            # MAKE SURE DIR EXISTS
+            while True:
+                if cls.base_dir:
+
+
+                    path = cls.base_dir / "nodes.json"
+
+                    with open(path, "r") as file:
+                        shit = json.load(file)
+
+                        if data == shit:
+                            if verbose: console.print("[+] data == new", style="bold green");  return False
+                           
+                        else:   
+                            if verbose: console.print("[-] data != new", style="bold green"); return True
+ 
+                        # VERBOSE
+                        if verbose:
+                            console.print("Successfully pushed new data", style="bold green")
+                        
+                        break
+
+
+
+
+                # MAKE DEFAULT DIR 
+                else:
+
+                    cls.base_dir = File_Handling.create_base_dir(get=True, verbose=True) 
+        
+
+        except Exception as e:
+            console.print(f"[bold red] Exception Error:[bold yellow] {e}")
 
 
 
@@ -424,6 +474,7 @@ class Push_Network_Status():
             console.print(f"[bold red] Exception Error:[bold yellow] {e}")
 
 
+    # DEAPRECIATED USE NEW METHOD ---> push_device_info_new
     @classmethod
     def push_device_info(cls, summary=False, target_ip=False, target_mac=False, host=False, vendor=False, status=False, verbose=False):
         """This method will be responsible for pushing device info """
@@ -591,8 +642,9 @@ class Push_Network_Status():
 
                 break
     
-    
-    @classmethod
+     
+    # DEAPRECIATED USE NEW METHOD ---> push_device_info_new
+    @classmethod   
     def get_network_summary(cls, delay=5, verbose=False):
         """This method will be responsible for updating the total amount of devices found and online"""
 
@@ -697,15 +749,18 @@ class Push_Network_Status():
 
 
                     # NOW PUSH ALL INFO AT ONCE <-- MORE MODERN WAY
+                    if Push_Network_Status.get_device_info_new(data=data, verbose=False):
+                        Push_Network_Status.push_device_info_new(data=data, verbose=False)
                     
                     
 
                     # PUSH DATA
-                    Push_Network_Status.push_device_info(summary=summary)
+                    if leg:
+                        Push_Network_Status.push_device_info(summary=summary, verbose=False)
                     
                     # DELAY
                     time.sleep(delay)
-            
+
             
                 except Exception as e:
                     console.print(f"[bold red]Exception Error:[bold yellow] {e} - {target_ip}")
