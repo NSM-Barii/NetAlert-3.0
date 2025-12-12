@@ -63,7 +63,6 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
 
 - **Auto-refresh**: Dashboard updates every 2 seconds (configurable)
 - **Search & Filter**: Find nodes by IP, hostname, vendor, or MAC
-- **Voice Commands**: Hold spacebar and say "refresh", "lockdown", or "clear"
 - **Inspect Nodes**: Click INSPECT to view detailed device information
 - **Emergency Lockdown**: Visual alert system (future: actual network blocking)
 
