@@ -185,7 +185,7 @@ function renderNodes() {
                 <td>${node.vendor || '—'}</td>
                 <td>
                     <button class="action-btn" onclick="inspectNode('${node.target_ip}')">INSPECT</button>
-                    <button class="action-btn" onclick="blockNode('${node.target_ip}')">BLOCK</button>
+                    <button class="action-btn" onclick="blockNode('${node.target_ip}')" title="Feature coming soon">BLOCK (SOON)</button>
                 </td>
             </tr>
         `;

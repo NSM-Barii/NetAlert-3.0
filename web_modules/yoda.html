@@ -86,6 +86,34 @@
                 </div>
             </div>
 
+            <!-- Node List Panel -->
+            <div class="panel nodes-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">◈</span>
+                    DETECTED NODES
+                    <span class="node-count" id="nodeCount">0 NODES</span>
+                </div>
+                <div class="panel-body">
+                    <div class="table-container">
+                        <table class="nodes-table">
+                            <thead>
+                                <tr>
+                                    <th>STATUS</th>
+                                    <th>IP ADDRESS</th>
+                                    <th>HOSTNAME</th>
+                                    <th>MAC ADDRESS</th>
+                                    <th>VENDOR</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nodesTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Terminal/Log Panel -->
             <div class="panel terminal-panel">
                 <div class="panel-header">
@@ -131,34 +159,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Node List Panel -->
-            <div class="panel nodes-panel">
-                <div class="panel-header">
-                    <span class="panel-icon">◈</span>
-                    DETECTED NODES
-                    <span class="node-count" id="nodeCount">0 NODES</span>
-                </div>
-                <div class="panel-body">
-                    <div class="table-container">
-                        <table class="nodes-table">
-                            <thead>
-                                <tr>
-                                    <th>STATUS</th>
-                                    <th>IP ADDRESS</th>
-                                    <th>HOSTNAME</th>
-                                    <th>MAC ADDRESS</th>
-                                    <th>VENDOR</th>
-                                    <th>ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="nodesTableBody">
-                                <!-- Populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Footer -->
@@ -167,6 +167,10 @@
                 <span>YODA v3.0</span>
                 <span class="separator">|</span>
                 <span>NetAlert Security Monitoring</span>
+                <span class="separator">|</span>
+                <a href="https://github.com/nsm-barii/netalert-3.0" target="_blank" rel="noopener" class="github-link">GitHub</a>
+                <span class="separator">|</span>
+                <span class="contribute">Contributions Welcome</span>
             </div>
             <div class="footer-center">
                 <span>Last Update: <span id="lastUpdate">--:--:--</span></span>

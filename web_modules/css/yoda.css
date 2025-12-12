@@ -614,6 +614,22 @@ body {
     margin: 0 10px;
 }
 
+.github-link {
+    color: var(--accent-secondary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.github-link:hover {
+    color: var(--accent-primary);
+    text-shadow: var(--glow);
+}
+
+.contribute {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
 .connected {
     color: var(--accent-primary);
 }
