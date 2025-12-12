@@ -1,106 +1,98 @@
-# 🚨 NetAlert-3.0
+# 🎯 YODA - Voice Activated IDS
 
-NetAlert-3.0 is a LAN **Intrusion Detection System** (soon to become an Intrusion Prevention System) 🛡️ that continuously monitors your network for connected devices.  
-It identifies and displays key details for each device, including:
+> **Formerly NetAlert-3.0**
 
-- 💻 **IP Address**  
-- 🏷️ **Hostname**  
-- 🔑 **MAC Address**  
-- 🏢 **Vendor**  
+YODA is a voice-activated **Intrusion Detection System** designed for real-time LAN monitoring. Built with a hacker-themed dashboard and live network visualization, YODA tracks every device on your network and provides instant status updates.
 
-⚡ **Coming Soon:** automatic open port scanning for each device, giving you deeper visibility into potential security risks.  
-
-All monitoring data is served to a live 🌐 browser-based frontend for easy management and real-time awareness.  
-
----
-
-## 📂 Directory Structure
-```
-nsm_modules/     # Backend Python modules
-web_modules/     # Frontend files
-cpp_modules/     # (Optional) C++ modules
-```
-
----
-
-## ⚙️ How It Works
-- **🧵 Background Threads**  
-  - **📊 Summary Updater** – Updates stats like total nodes and currently online nodes.  
-  - **🔍 ARP Scanner** – Runs interval-based ARP scans to discover all devices on the subnet.  
-
-- **📡 Per-Device Monitoring**  
-  - Each discovered device gets its own monitoring thread.  
-  - Monitors whether the device is online or offline using repeated ARP checks.  
-
-- **💻 HTTP Server**  
-  - Hosts the web frontend.  
-  - Dynamically loads `nodes.json` to display live device data.  
+**🤖 AI-Powered (Coming Soon)** - We're working on integrating AI for intelligent threat detection and anomaly analysis. Contributions welcome!
 
 ---
 
 ## ✨ Features
-- ⚡ Real-time LAN device discovery using ARP.  
-- 📶 Per-device status tracking.  
-- 🌐 Web interface for easy viewing of network activity.  
-- 🛡️ IDS core ready for future IPS features.  
-- 📋 Device information: IP, hostname, MAC, vendor.  
-- 🔮 (Planned) Per-device open port scanning.  
+
+- 🔍 **Real-time device discovery** via ARP scanning
+- 🎨 **Hacker-themed web dashboard** with Matrix effects
+- 📊 **Live monitoring** of IP, MAC, hostname, vendor info
+- 🗣️ **Voice commands** (hold spacebar to activate)
+- 🔴 **Online/Offline tracking** for all network nodes
+- ⚡ **No symlinks required** - data served directly from memory
+- 🌐 **Cross-platform** support (Linux, macOS, Windows)
 
 ---
 
-## 🚀 Setup & Running
+## 🚀 Quick Start
 
-1. **Navigate to the backend folder**  
+1. **Clone and navigate**
    ```bash
    cd nsm_modules
    ```
 
-2. **Create and activate a virtual environment**  
+2. **Setup virtual environment**
    ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Install dependencies**  
+3. **Install dependencies**
    ```bash
    pip install -r ../requirements.txt
    ```
 
-4. **Run the backend + frontend server**  
+4. **Run YODA**
    ```bash
-   sudo .venv/bin/python nsm_main.py
+   sudo venv/bin/python nsm_main.py
    ```
 
-5. **📝 CLI Startup Prompts**  
-   When starting, the program will ask for:  
-   - **Interface** (`iface`) – Example: `eth0` or `wlan0`  
-   - **Subnet** – Example: `192.168.1.0/24`  
-   - **Mode** – Choose **GUI** unless you specifically want to test the unfinished CLI version.  
-
-6. **🌍 Access the Frontend**  
-   Once started, the terminal will print a link to open in your browser for the live GUI view.  
+5. **Access the dashboard**
+   - The program will prompt you for:
+     - **Interface** (e.g., `eth0`, `wlan0`)
+     - **Subnet** (e.g., `192.168.1.0/24`)
+     - **Mode** (choose **GUI**)
+   - Open your browser to the URL displayed in terminal (typically `http://localhost:8000/yoda.html`)
 
 ---
 
-## 🔗 Optional: Symlink for `nodes.json` in `web_modules`
+## 🎮 Usage
 
-If you want the frontend in `web_modules` to directly use the live `nodes.json` file from the backend without copying it, create a symbolic link:
-
-```bash
-cd web_modules
-ln -s ../../.data/netalert3/nodes.json .
-```
-
-Alternatively, you can point the frontend to read from:
-```
-~/Documents/nsm_tools/.data/netalert3/nodes.json (NOT RECOMMENDED)
-```
-
-This ensures the web interface always displays the latest device data.
+- **Auto-refresh**: Dashboard updates every 2 seconds (configurable)
+- **Search & Filter**: Find nodes by IP, hostname, vendor, or MAC
+- **Voice Commands**: Hold spacebar and say "refresh", "lockdown", or "clear"
+- **Inspect Nodes**: Click INSPECT to view detailed device information
+- **Emergency Lockdown**: Visual alert system (future: actual network blocking)
 
 ---
 
-## 📦 Requirements
-- 🐍 Python 3.x  
-- [📡 Scapy](https://scapy.net/)  
-- 📄 `requirements.txt` dependencies  
+## 🤝 Contributing
+
+Contributions are **welcome**, especially for:
+- 🤖 **AI integration** for threat detection
+- 🔒 **Automated blocking/prevention** features
+- 🎤 **Enhanced voice commands**
+- 📡 **Port scanning integration**
+
+Submit PRs to [github.com/nsm-barii/netalert-3.0](https://github.com/nsm-barii/netalert-3.0)
+
+---
+
+## 📋 Requirements
+
+- Python 3.x
+- Scapy
+- Rich (for CLI)
+- See `requirements.txt` for full dependencies
+
+---
+
+## 📁 Project Structure
+
+```
+nsm_modules/     # Backend Python modules
+web_modules/     # Frontend (HTML/CSS/JS)
+  ├── yoda.html  # Main dashboard
+  ├── css/       # Styles
+  └── js/        # JavaScript + Matrix effects
+```
+
+---
+
+**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/netalert-3.0) | Contributions Welcome
