@@ -1,6 +1,6 @@
-# 🎯 YODA - Voice Activated IDS
+# Yoda - Voice Activated IDS
 
-![YODA Banner](banner.png)
+![Yoda Banner](banner.png)
 
 > **Formerly NetAlert-3.0**
 
