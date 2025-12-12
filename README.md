@@ -24,7 +24,8 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
 
 1. **Clone and navigate**
    ```bash
-   cd nsm_modules
+   git clone https://github.com/nsm-barii/yoda.git
+   cd yoda/nsm_modules
    ```
 
 2. **Setup virtual environment**
@@ -78,8 +79,8 @@ Contributions are welcome, especially for:
 - Enhanced voice commands
 - Port scanning integration
 
-Submit PRs to [github.com/nsm-barii/netalert-3.0](https://github.com/nsm-barii/netalert-3.0)
+Submit PRs to [github.com/nsm-barii/yoda](https://github.com/nsm-barii/yoda)
 
 ---
 
-**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/netalert-3.0) | Contributions Welcome
+**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/yoda) | Contributions Welcome
