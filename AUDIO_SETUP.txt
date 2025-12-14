@@ -34,3 +34,9 @@
    - Audio doesn't play: Check if mpg123 or mpv is installed
    - Permission errors: Make sure you ran install WITHOUT sudo
    - Files pile up in queue: Daemon not running, check status
+
+
+
+sudo yoda-audio nsm_modules/output.mp3
+cp: cannot create regular file '/root/.yoda-audio/1765710907817364862_output.mp3': No such file or directory
+         
