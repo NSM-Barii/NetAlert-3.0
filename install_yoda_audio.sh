@@ -129,3 +129,18 @@ systemctl --user status yoda-audio.service --no-pager
 echo ""
 echo "To stop:  systemctl --user stop yoda-audio"
 echo "To start: systemctl --user start yoda-audio"
+
+
+
+
+[YODA Audio Installer]
+[+] Audio player found
+[+] Created queue directory: /tmp/yoda-audio
+[+] Installed /usr/local/bin/yoda-audio
+[+] Created systemd user service
+[+] Installed /usr/local/bin/yoda-audio-daemon
+Failed to connect to user scope bus via local transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined (consider using --machine=<user>@.host --user to connect to bus of other user)
+                                                                                                                                                                                 
+┌──(venv)─(bari㉿laptop)-[~/Documents/nsm_tools/Yoda]
+└─$ sudo yoda-audio nsm_modules/output.mp3                                                                                                                       
+Queued: /tmp/yoda-audio/1765709696228092337_output.mp3
