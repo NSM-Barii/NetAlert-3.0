@@ -30,32 +30,44 @@ chmod 777 "$QUEUE_DIR"
 echo "[+] Created queue directory: $QUEUE_DIR"
 
 # Install yoda-audio command
-sudo tee /usr/local/bin/yoda-audio > /dev/null << 'EOF'
+INSTALL_USER="$USER"
+sudo tee /usr/local/bin/yoda-audio > /dev/null << EOF
 #!/bin/bash
 set -e
 
-QUEUE_DIR="$HOME/.yoda-audio"
+# Detect real user even when running as root
+if [[ \$EUID -eq 0 ]]; then
+    REAL_USER=\$(logname 2>/dev/null || who am i | awk '{print \$1}')
+    [[ -z "\$REAL_USER" ]] && REAL_USER="$INSTALL_USER"
+    QUEUE_DIR=\$(eval echo ~\$REAL_USER)/.yoda-audio
+else
+    QUEUE_DIR="\$HOME/.yoda-audio"
+fi
 
-if [[ $# -ne 1 ]]; then
+if [[ \$# -ne 1 ]]; then
     echo "Usage: yoda-audio <audio-file>"
     exit 1
 fi
 
-FILE="$1"
+FILE="\$1"
 
-if [[ ! -f "$FILE" ]]; then
-    echo "Error: file not found: $FILE"
+if [[ ! -f "\$FILE" ]]; then
+    echo "Error: file not found: \$FILE"
     exit 1
 fi
 
-# Copy to queue with timestamp
-TS=$(date +%s%N)
-BASENAME=$(basename "$FILE")
-DEST="$QUEUE_DIR/${TS}_${BASENAME}"
+# Create queue dir if needed
+mkdir -p "\$QUEUE_DIR"
+chmod 777 "\$QUEUE_DIR"
 
-cp "$FILE" "$DEST"
-chmod 666 "$DEST"
-echo "Queued: $DEST"
+# Copy to queue with timestamp
+TS=\$(date +%s%N)
+BASENAME=\$(basename "\$FILE")
+DEST="\$QUEUE_DIR/\${TS}_\${BASENAME}"
+
+cp "\$FILE" "\$DEST"
+chmod 666 "\$DEST"
+echo "Queued: \$DEST"
 EOF
 
 sudo chmod +x /usr/local/bin/yoda-audio
