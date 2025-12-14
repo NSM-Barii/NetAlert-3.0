@@ -590,7 +590,7 @@ class Connection_Handler():
             LINEE = "-" * 25
             LINEEE = "-" * 34
             morning = notez #random.choice(notes)
-            time_stamp = "git"#f"Timestamp: {datetime.now().strftime("%m/%d/%Y - %H:%M:%S")}"
+            time_stamp = f"Timestamp: {datetime.now().strftime(f"%m/%d/%Y - %H:%M:%S")}"
             summary = f"Online Devices: {nodes_online}\nOffline Devices: {nodes_offline}\nTotal Devices: {nodes_total}"
             program_elapsed_time = f"Total Program elapsed time: {time_elapsed}"
 
@@ -1282,6 +1282,7 @@ class TTS():
                 """
                 path = str(Path(__file__).parent / "output.mp3" )
                 tts.save(path); print("1"); os.sync()
+                player = str(Path(__file__).parent / "audio_player.py")
 
 
 
@@ -1290,7 +1291,7 @@ class TTS():
 
                 env = os.environ.copy()
                 
-                t = 2
+                t = 3
                 if t == 1:
                     r = subprocess.run(
                         ["mpg123", path],
@@ -1299,25 +1300,29 @@ class TTS():
                         stderr=subprocess.PIPE
                     ) ; print(f"Return code: {r}")
                 
-                else:
+                elif t == 2:
 
                     env = os.environ.copy()  # critical for audio routing
 
-                    r = subprocess.run(
+                    r = subprocess.Popen(
                         ["mpv", "--volume=100", path],
                         env=env,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL
                     )
 
-                print(f"Return code: {r.returncode}")
-
-
-
-                if r.returncode != 0:
-                    raise RuntimeError(f"mpg123 crashed with return code {r.returncode}")
                 else:
-                    print("mpg123 played successfully.")
+
+                    r = subprocess.run(["yoda-audio", path])
+                    print(f"Return code: {r.returncode}")
+
+
+                
+                if t == 1:
+                    if r.returncode != 0:
+                        raise RuntimeError(f"mpg123 crashed with return code {r.returncode}")
+                    else:
+                        print("mpg123 played successfully.")
 
 
                 #os.system("aplay output.mp3 2>/dev/null")

