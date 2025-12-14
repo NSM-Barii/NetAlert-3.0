@@ -3,6 +3,13 @@ set -e
 
 echo "[YODA Audio Installer]"
 
+# Check if running as root
+if [[ $EUID -eq 0 ]]; then
+    echo "[ERROR] Do not run this script with sudo"
+    echo "Run as: bash install_yoda_audio.sh"
+    exit 1
+fi
+
 # Check for audio player
 if ! command -v mpg123 &> /dev/null && ! command -v mpv &> /dev/null; then
     echo "[ERROR] Neither mpg123 nor mpv found"
@@ -17,17 +24,17 @@ fi
 echo "[+] Audio player found"
 
 # Create queue directory
-QUEUE_DIR="/tmp/yoda-audio"
+QUEUE_DIR="$HOME/.yoda-audio"
 mkdir -p "$QUEUE_DIR"
-chmod 1777 "$QUEUE_DIR"
+chmod 777 "$QUEUE_DIR"
 echo "[+] Created queue directory: $QUEUE_DIR"
 
 # Install yoda-audio command
-cat > /usr/local/bin/yoda-audio << 'EOF'
+sudo tee /usr/local/bin/yoda-audio > /dev/null << 'EOF'
 #!/bin/bash
 set -e
 
-QUEUE_DIR="/tmp/yoda-audio"
+QUEUE_DIR="$HOME/.yoda-audio"
 
 if [[ $# -ne 1 ]]; then
     echo "Usage: yoda-audio <audio-file>"
@@ -51,7 +58,7 @@ chmod 666 "$DEST"
 echo "Queued: $DEST"
 EOF
 
-chmod +x /usr/local/bin/yoda-audio
+sudo chmod +x /usr/local/bin/yoda-audio
 echo "[+] Installed /usr/local/bin/yoda-audio"
 
 # Install systemd user service
@@ -76,10 +83,10 @@ EOF
 echo "[+] Created systemd user service"
 
 # Install daemon script
-cat > /usr/local/bin/yoda-audio-daemon << 'EOF'
+sudo tee /usr/local/bin/yoda-audio-daemon > /dev/null << 'EOF'
 #!/bin/bash
 
-QUEUE_DIR="/tmp/yoda-audio"
+QUEUE_DIR="$HOME/.yoda-audio"
 
 echo "[YODA Audio Daemon] Starting..."
 
@@ -110,7 +117,7 @@ else
 fi
 EOF
 
-chmod +x /usr/local/bin/yoda-audio-daemon
+sudo chmod +x /usr/local/bin/yoda-audio-daemon
 echo "[+] Installed /usr/local/bin/yoda-audio-daemon"
 
 # Enable and start service for current user

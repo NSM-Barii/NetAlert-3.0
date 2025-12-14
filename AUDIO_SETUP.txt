@@ -1,0 +1,36 @@
+=== YODA Audio Setup Instructions ===
+
+1. INSTALL
+   Run: bash install_yoda_audio.sh
+
+2. UNINSTALL PREVIOUS VERSION (run these commands on your other laptop)
+   systemctl --user stop yoda-audio
+   systemctl --user disable yoda-audio
+   sudo rm /usr/local/bin/yoda-audio
+   sudo rm /usr/local/bin/yoda-audio-daemon
+   rm ~/.config/systemd/user/yoda-audio.service
+   rm -rf ~/.yoda-audio
+   systemctl --user daemon-reload
+
+3. TROUBLESHOOTING
+
+   Check if daemon is running:
+     systemctl --user status yoda-audio
+
+   Check queue directory:
+     ls -la ~/.yoda-audio/
+
+   Manual test:
+     yoda-audio /path/to/test.mp3
+
+   View daemon logs:
+     journalctl --user -u yoda-audio -f
+
+   Restart daemon:
+     systemctl --user restart yoda-audio
+
+4. COMMON ISSUES
+
+   - Audio doesn't play: Check if mpg123 or mpv is installed
+   - Permission errors: Make sure you ran install WITHOUT sudo
+   - Files pile up in queue: Daemon not running, check status
