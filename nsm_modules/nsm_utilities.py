@@ -1297,7 +1297,9 @@ class TTS():
                         env=env,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.PIPE
-                    ) ; print(f"Return code: {r}");  else:
+                    ) ; print(f"Return code: {r}")
+                
+                else:
 
                     env = os.environ.copy()  # critical for audio routing
 
