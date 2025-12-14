@@ -1272,13 +1272,51 @@ class TTS():
             try:
 
                 tts = gTTS(say)
-                tts.save("output.mp3")
 
-                subprocess.run(
-                    ["mpg123", "output.mp3"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
+                """
+
+                Path     = file type
+                __file__ = current file program logic is running from
+                parent   = logical parent of __file__
+
+                """
+                path = str(Path(__file__).parent / "output.mp3" )
+                tts.save(path); print("1"); os.sync()
+
+
+
+                if not os.path.exists(path):
+                    raise FileNotFoundError("MP3 file not found.")
+
+                env = os.environ.copy()
+                
+                t = 2
+                if t == 1:
+                    r = subprocess.run(
+                        ["mpg123", path],
+                        env=env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE
+                    ) ; print(f"Return code: {r}");  else:
+
+                    env = os.environ.copy()  # critical for audio routing
+
+                    r = subprocess.run(
+                        ["mpv", "--volume=100", path],
+                        env=env,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+
+                print(f"Return code: {r.returncode}")
+
+
+
+                if r.returncode != 0:
+                    raise RuntimeError(f"mpg123 crashed with return code {r.returncode}")
+                else:
+                    print("mpg123 played successfully.")
+
 
                 #os.system("aplay output.mp3 2>/dev/null")
 

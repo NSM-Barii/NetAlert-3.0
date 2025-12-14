@@ -37,7 +37,7 @@ def record_block(seconds):
 
     def callback(indata, frames, time, status):
         if status:
-            print("Mic status:", status)
+            pass; print("Mic status:", status)
         audio.extend(indata[:, 0])
 
     with sd.InputStream(samplerate=native_rate, channels=1, dtype='float32',
@@ -63,6 +63,8 @@ def transcribe(audio):
 
 # === MAIN ===
 def run_yoda():
+    from nsm_modules.nsm_main import Main
+    Main.run()
     print("[Yoda] Say 'Hey Yoda' to wake me up...\n")
     while True:
         wake_audio = record_block(LISTEN_SECONDS)
@@ -72,7 +74,7 @@ def run_yoda():
         if not transcript:
             continue
 
-        print(f"[STT] Heard: '{transcript}'")
+       # print(f"[STT] Heard: '{transcript}'")
 
         if WAKE_PHRASE in transcript.lower():
             print("[Yoda] Wake word detected.")
@@ -80,6 +82,9 @@ def run_yoda():
             cmd_resampled = resample_audio(cmd_audio)
             command = transcribe(cmd_resampled)
             print(f"[Yoda] Command: '{command}'\n")
+            if "attack" in command:
+                from yoda_controller import ARP_Poison
+                ARP_Poison.main(router_ip="192.168.1.1", iface="wlan0")
 
 if __name__ == "__main__":
     run_yoda()
