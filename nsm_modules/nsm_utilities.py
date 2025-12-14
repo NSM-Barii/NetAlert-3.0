@@ -1280,56 +1280,13 @@ class TTS():
                 parent   = logical parent of __file__
 
                 """
-                path = str(Path(__file__).parent / "output.mp3" )
-                tts.save(path); print("1"); os.sync()
-                player = str(Path(__file__).parent / "audio_player.py")
-
-
+                path = str(Path(__file__).parent / "output.mp3")
+                tts.save(path)
 
                 if not os.path.exists(path):
                     raise FileNotFoundError("MP3 file not found.")
 
-                env = os.environ.copy()
-                
-                t = 3
-                if t == 1:
-                    r = subprocess.run(
-                        ["mpg123", path],
-                        env=env,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.PIPE
-                    ) ; print(f"Return code: {r}")
-                
-                elif t == 2:
-
-                    env = os.environ.copy()  # critical for audio routing
-
-                    r = subprocess.Popen(
-                        ["mpv", "--volume=100", path],
-                        env=env,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-
-                else:
-
-                    r = subprocess.run(["yoda-audio", path])
-                    print(f"Return code: {r.returncode}")
-
-
-                
-                if t == 1:
-                    if r.returncode != 0:
-                        raise RuntimeError(f"mpg123 crashed with return code {r.returncode}")
-                    else:
-                        print("mpg123 played successfully.")
-
-
-                #os.system("aplay output.mp3 2>/dev/null")
-
-
-                #console.print("i was able to print")
-                #time.sleep(3)
+                subprocess.run(["yoda-audio", path], check=False)
             
             except Exception as e:
                 console.print(f"[bold red]TTS Driver - Exception Error:[bold yellow] {e}")
