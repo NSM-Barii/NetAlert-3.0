@@ -590,7 +590,7 @@ class Connection_Handler():
             LINEE = "-" * 25
             LINEEE = "-" * 34
             morning = notez #random.choice(notes)
-            time_stamp = f"Timestamp: {datetime.now().strftime(f"%m/%d/%Y - %H:%M:%S")}"
+            time_stamp = f"Timestamp: {datetime.now().strftime("%m/%d/%Y - %H:%M:%S")}"
             summary = f"Online Devices: {nodes_online}\nOffline Devices: {nodes_offline}\nTotal Devices: {nodes_total}"
             program_elapsed_time = f"Total Program elapsed time: {time_elapsed}"
 
