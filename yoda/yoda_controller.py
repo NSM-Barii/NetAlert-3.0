@@ -4,7 +4,7 @@
 # THE SKILLS WILL PAY THE BILLS
 
 # Yoda IMPORTS //
-from nsm_modules.nsm_utilities import Connection_Handler 
+from nsm_modules.nsm_utilities import Connection_Handler, TTS
 
 
 # UI IMPORTS
@@ -193,14 +193,16 @@ class ARP_Poison():
         """This will be the main controller method that calls upon sub methods"""
 
         
-        cls.attack_poison = True
         nodes_attacked = []
 
 
         def _main(router_ip, iface):
 
-
+            
+            #if cls.attack_poison: return
             console.print("\n\n[+] LAN Attack 1 Started\n\n", style="bold green")
+            TTS.tts_google(say="Yes sir. Yoda now launching attack")
+            cls.attack_poison = True
 
 
             while cls.attack_poison:
@@ -223,8 +225,8 @@ class ARP_Poison():
 
                 time.sleep(1)
         
-
-        threading.Thread(target=_main, args=(router_ip, iface), daemon=True).start()
+        if not cls.attack_poison:
+            threading.Thread(target=_main, args=(router_ip, iface), daemon=True).start()
 
         
 
@@ -235,6 +237,8 @@ class ARP_Poison():
 
         ARP_Poison.attack_poison = False; ARP_Poison.attack_scan   = False
         console.print("\n\n[+] LAN Attack 1 Terminated\n\n", style="bold green")
+        TTS.tts_google(say="Yes sir. Yoda now KIlling attack")
+
       
 
 

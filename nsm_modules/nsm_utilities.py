@@ -17,7 +17,7 @@ from scapy.all import sniff, ARP, IP, ICMP, srp, Ether, conf
 # ETC IMPORTS
 import sqlite3, os, threading, time, random, json
 from datetime import datetime, timedelta; from pathlib import Path
-import argparse, subprocess
+import argparse, subprocess, threading
 
 
 # VOICE 
@@ -1265,8 +1265,11 @@ class TTS():
 
         
 
+
         # TO PREVENT DRIVER ERRORS
         if not cls.drive_error: 
+
+
 
 
             try:
@@ -1294,6 +1297,8 @@ class TTS():
 
                 # DRIVER ERROR
                 cls.drive_error = True    
+            
+           # threading.Thread(target=_speak, args=(), daemon=True).start()
 
 
     @staticmethod

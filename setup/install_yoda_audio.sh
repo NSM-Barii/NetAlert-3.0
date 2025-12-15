@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+# RUNNING THIS --> bash install_yoda_audio.sh
+
 echo "[YODA Audio Installer]"
 
 # Check if running as root
