@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if venv exists
+if [[ ! -f "$SCRIPT_DIR/venv/bin/python" ]]; then
+    echo "[ERROR] Virtual environment not found!"
+    echo "Run: python3 -m venv venv && source venv/bin/activate && pip install -e ."
+    exit 1
+fi
+
+# Check if running as root
+if [[ $EUID -ne 0 ]]; then
+    echo "[ERROR] This script must be run with sudo"
+    echo "Run: sudo ./yoda"
+    exit 1
+fi
+
+# Run YODA with venv Python
+"$SCRIPT_DIR/venv/bin/python" "$SCRIPT_DIR/nsm_modules/nsm_main.py" "$@"

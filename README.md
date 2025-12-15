@@ -25,7 +25,7 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
 1. **Clone and navigate**
    ```bash
    git clone https://github.com/nsm-barii/yoda.git
-   cd yoda/nsm_modules
+   cd Yoda
    ```
 
 2. **Setup virtual environment**
@@ -36,24 +36,37 @@ YODA is a voice-activated **Intrusion Detection System** designed for real-time 
 
 3. **Install dependencies**
    ```bash
-   pip install -r ../requirements.txt
+   pip install -e .
    ```
 
-4. **Install mpg123 (required for voice commands)**
+4. **Install mpv (required for voice commands)**
    ```bash
    # Debian/Ubuntu
-   sudo apt install mpg123
+   sudo apt install mpv
 
    # Arch
-   sudo pacman -S mpg123
+   sudo pacman -S mpv
    ```
 
-5. **Run YODA**
+5. **Install YODA Audio System**
    ```bash
-   sudo venv/bin/python nsm_main.py
+   bash install_yoda_audio.sh
    ```
 
-6. **Access the dashboard**
+6. **Download voice recognition model**
+   ```bash
+   cd yoda_modules
+   wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+   unzip vosk-model-small-en-us-0.15.zip -d models/
+   cd ..
+   ```
+
+7. **Run YODA**
+   ```bash
+   sudo ./yoda
+   ```
+
+8. **Access the dashboard**
    - The program will prompt you for:
      - **Interface** (e.g., `eth0`, `wlan0`)
      - **Subnet** (e.g., `192.168.1.0/24`)
