@@ -563,7 +563,7 @@ class Connection_Handler():
             #console.print(data)
 
             
-            # GET VARS //
+            # GET VARS
             nodes_online = data["summary"]["nodes_online"]
             nodes_total = data["summary"]["nodes_total"]
             nodes_offline = nodes_total - nodes_online

