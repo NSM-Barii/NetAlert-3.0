@@ -83,7 +83,7 @@ class Variables():
     # MONITORING VARS
     iface_monitor = "wlan1"  # FOR MONITOR MODE
     
-    ntfy_ble_path  = "nsm-test-123"
+    ntfy_ble_path  = False   # opt-in: ntfy topics are public + unauthenticated, so no live default (user sets their own)
     ntfy_wifi_path = False
     notify_client_events = False
     tts_interval         = 600

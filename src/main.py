@@ -49,8 +49,8 @@ def main():
     )
 
     parser.add_argument("-i",    metavar="IFACE",      help="Monitor mode interface (default: wlan1)")
-    parser.add_argument("--bu", type=int, default=25,  help="BLE unstable device threshold (default: 25)")
-    parser.add_argument("--bd", type=int, default=25,  help="BLE drop score threshold (default: 25)")
+    parser.add_argument("--bu", type=int, default=None,  help="BLE unstable device threshold (default: 25)")
+    parser.add_argument("--bd", type=int, default=None,  help="BLE drop score threshold (default: 25)")
     parser.add_argument("-ntfy", metavar="TOPIC",      help="ntfy topic for push notifications (e.g. my-topic-123)")
     parser.add_argument("--help", "-h", action="store_true",  help="Show this help message")
     parser.add_argument("--obs",  action="store_true", help="Obfuscate MACs and SSIDs in the TUI")
@@ -64,7 +64,13 @@ def main():
         parser.print_help()
         return False
 
-    if args.obs: Variables.obfuscate = True
+    # CLI OVERRIDES  ——  applied BEFORE CLI.main() so each becomes the default shown in the interactive prompt
+    if args.obs:               Variables.obfuscate        = True
+    if args.i    is not None:  Variables.iface_monitor    = args.i
+    if args.ntfy is not None:  Variables.ntfy_ble_path    = Variables.ntfy_wifi_path = args.ntfy
+    if args.bu   is not None:  Variables.pct_set_unstable = args.bu
+    if args.bd   is not None:  Variables.pct_set_drop     = args.bd
+
 
     CLI.main()
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)

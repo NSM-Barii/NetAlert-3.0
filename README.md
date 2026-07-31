@@ -56,11 +56,18 @@ Four tabs — live dashboard, BLE device table, WiFi AP table, WiFi tree (APs wi
 
 ## Push Notifications (ntfy)
 
-Alerts route to your phone via [ntfy.sh](https://ntfy.sh). Set a topic and install the ntfy app — no account needed.
+Alerts route to your phone via [ntfy.sh](https://ntfy.sh) — install the ntfy app and subscribe to your topic, no account needed.
+
+Notifications are **off by default and opt-in.** ntfy topics are public and unauthenticated — anyone who knows a topic name can read *and* post to it — so Yoda ships with no default topic. Choose your own long, hard-to-guess name; alerts only start sending once you set one.
+
+BLE and WiFi alerts use **separate topics** so you can route them independently. The `-ntfy` flag is a shortcut that points **both** at the same topic:
 
 ```bash
-python main.py -i wlan1 -ntfy my-topic-123
+# quick start — BLE and WiFi alerts to one topic
+sudo venv/bin/python main.py -ntfy my-topic-a9f3k2
 ```
+
+To send BLE and WiFi to **different** topics, skip `-ntfy` and set `ntfy_ble_path` / `ntfy_wifi_path` separately in the interactive setup prompt.
 
 | Event | Priority |
 |---|---|
@@ -115,21 +122,26 @@ Requires a wireless adapter that supports monitor mode.
 
 ## Usage
 
-Flags are optional. Pass them to skip the prompt for that setting, or just set everything interactively.
+On launch, an interactive CLI walks you through every setting (interface, ntfy topics, thresholds, …), each pre-filled with a default — just hit Enter to accept.
+
+Flags are optional shortcuts: any flag you pass becomes the **default shown in that prompt**, so you can pass it and press Enter, or still type over it. Nothing you don't pass is touched.
 
 ```
+sudo venv/bin/python main.py
 sudo venv/bin/python main.py -i wlan1
-sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-123
-sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-123 --bu 30 --bd 40
-sudo venv/bin/python main.py -help
+sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-a9f3k2
+sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-a9f3k2 --bu 30 --bd 40
+sudo venv/bin/python main.py --help
 ```
 
 | Flag | Description | Default |
 |---|---|---|
 | `-i` | Monitor mode interface | `wlan1` |
-| `-ntfy` | ntfy topic for push notifications | off |
+| `-ntfy` | ntfy topic — sets **both** the BLE and WiFi topics | off |
 | `--bu` | BLE unstable device threshold % | 25 |
 | `--bd` | BLE drop score threshold % | 25 |
+| `--obs` | Obfuscate MACs and SSIDs in the TUI | off |
+| `--help` / `-h` | Show help and exit | — |
 
 ---
 
