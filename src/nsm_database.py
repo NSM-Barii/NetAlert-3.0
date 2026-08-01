@@ -1146,6 +1146,16 @@ class TTS():
 
 
     @classmethod
+    def _audio_env(cls):
+        """Route root's audio to the real user's PipeWire session (sudo sets SUDO_UID)."""
+        env = dict(os.environ)
+        uid = env.get("SUDO_UID")                    # who actually ran sudo
+        if uid: env["XDG_RUNTIME_DIR"] = f"/run/user/{uid}"
+        return env
+
+
+
+    @classmethod
     def speak_piper(cls, say, verbose=True, force=False):
         """This will be used to speak tts out of a-play"""
 
@@ -1165,7 +1175,7 @@ class TTS():
             print("1")
 
             if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
-            subprocess.run(["pw-play", f"{TTS_WAV}"], stderr=subprocess.DEVNULL)
+            subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
            
             with Variables.LOCK: cls.speaking = False; return True
 
