@@ -1164,6 +1164,7 @@ class TTS():
             with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
             print("1")
 
+
             if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
             subprocess.run(["pw-play", f"{TTS_WAV}"], stderr=subprocess.DEVNULL)
            
@@ -1183,7 +1184,6 @@ class TTS():
 
         try:
 
-
             cls.voice = PiperVoice.load(MODEL)
             console.print(f"[bold green][+] Successfully loaded Voice Module!")
 
@@ -1202,4 +1202,6 @@ if __name__ == "__main__":
 
     TTS.init()
 
-    TTS.speak_piper(say="Attention, Bluetooth Jamming Detected!")
+    while True:
+        time.sleep(.1)
+        TTS.speak_piper(say="Attention, Bluetooth Jamming Detected!")

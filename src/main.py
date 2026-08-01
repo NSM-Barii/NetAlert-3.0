@@ -12,7 +12,7 @@ import threading, time, sys, argparse
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_tui import TUI, CLI
-from nsm_database import Background_Threads
+from nsm_database import Background_Threads, TTS
 #import nsm_server_mcp
 # import nsm_voice_agent
 
@@ -72,7 +72,13 @@ def main():
     if args.bd   is not None:  Variables.pct_set_drop     = args.bd
 
 
+
+
+    
+
+
     CLI.main()
+    TTS.init(); TTS.speak_piper(say="Yoda, Made by NSM Barii, now up and running!")
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
     TUI().run()
 
