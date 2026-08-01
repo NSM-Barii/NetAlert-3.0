@@ -1140,16 +1140,19 @@ class TTS():
     """This class will be reponsible for holding tts logic"""
 
 
-    speaking = False
-    waiting = []
+    speaking   = False
+    last_spoke = False
+    waiting     = []
 
 
 
     @classmethod
     def _audio_env(cls):
         """Route root's audio to the real user's PipeWire session (sudo sets SUDO_UID)."""
+
+
         env = dict(os.environ)
-        uid = env.get("SUDO_UID")                    # who actually ran sudo
+        uid = env.get("SUDO_UID")
         if uid: env["XDG_RUNTIME_DIR"] = f"/run/user/{uid}"
         return env
 
@@ -1160,28 +1163,29 @@ class TTS():
         """This will be used to speak tts out of a-play"""
 
 
-        try:
+        def worker():
+            """worker"""
 
-            with Variables.LOCK:
+            try:
 
-                while True:
-
-                    if not cls.speaking: cls.speaking = True; break
-
-                    time.sleep(.1)
+                with Variables.LOCK: 
+                    if cls.speaking: return False
 
 
-            with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
-            print("1")
+                cls.speaking = True
+                cls.last_spoke = time.time() 
+                with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
+                if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
+                subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
+            
+                with Variables.LOCK: cls.speaking = False; return True
 
 
-            if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
-            subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
-           
-            with Variables.LOCK: cls.speaking = False; return True
+            except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
 
-
-        except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
+ 
+        if time.time() - cls.last_spoke > 60 and not force: return False
+        threading.Thread(target=worker, args=(), daemon=True).start()
 
 
 
@@ -1195,8 +1199,9 @@ class TTS():
         try:
 
             cls.voice = PiperVoice.load(MODEL)
+            cls.last_spoke = time.time()
             console.print(f"[bold green][+] Successfully loaded Voice Module!")
-
+ 
             return True
 
 
