@@ -8,6 +8,8 @@ rich
 textual
 pyfiglet
 
+# TTS
+piper-tts
 
 # LLM / Voice Agent
 #livekit-agents

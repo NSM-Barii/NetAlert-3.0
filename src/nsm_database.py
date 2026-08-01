@@ -9,8 +9,18 @@ from scapy.all import RadioTap
 from scapy.layers.dot11 import Dot11Elt, Dot11Beacon
 
 
+# TTS
+import wave, os, tempfile
+from piper.voice import PiperVoice
+TTS_WAV = os.path.join(tempfile.gettempdir(), f"tts_{os.getpid()}.wav")
+MODEL = str(Path(__file__).parent.parent / "database" / "en_US-lessac-medium.onnx")
+
+
+
 # NSM IMPORTS
 from nsm_vars import Variables
+
+
 
 
 # CONSTANTS
@@ -1012,59 +1022,6 @@ class Extensions():
 
 
 
-        if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
-
-            msg = "called pct"
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-
-            if cls.good_unstable:
-                msg = f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}"
-                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score rising", cause=f"Unstable Devices: {unstables}/{total}")
-                cls.good_unstable = False
-
-        elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
-            
-            if not cls.good_unstable:
-                msg = f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}" # unstables: {unstables}/{total}"
-                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score recovering", cause=f"Unstable Devices: {unstables}/{total}")
-                cls.good_unstable = True
-
-
-        if drop_pct > cls.prev_drop_pct and drop_pct > pct_set_drop:
-
-            msg = "called drop"
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-           
-            if cls.good_drop:
-                msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
-                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-                
-                n = cls.last_count - count
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count} -> {count}  ({n} dropped)\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
-                cls.good_drop = False
-
-
-        elif drop_pct < cls.prev_drop_pct and drop_pct < pct_set_drop / 2:
-
-            if not cls.good_drop: 
-                msg = f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}"
-                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}")
-                cls.good_drop = True
-
-        
-
-        cls.prev_drop_pct     = drop_pct
-        cls.prev_unstable_pct = unstable_pct
-
-
 
         #if color in valid and cls.last_count != current_count:
 
@@ -1177,3 +1134,72 @@ class DeviceLog():
             return True
 
 
+
+
+class TTS():
+    """This class will be reponsible for holding tts logic"""
+
+
+    speaking = False
+    waiting = []
+
+
+
+    @classmethod
+    def speak_piper(cls, say, verbose=True, force=False):
+        """This will be used to speak tts out of a-play"""
+
+
+        try:
+
+            with Variables.LOCK:
+
+                while True:
+
+                    if not cls.speaking: cls.speaking = True; break
+
+                    time.sleep(.1)
+
+
+            with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
+            print("1")
+
+            if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
+            subprocess.run(["pw-play", f"{TTS_WAV}"], stderr=subprocess.DEVNULL)
+           
+            with Variables.LOCK: cls.speaking = False; return True
+
+
+        except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
+
+
+
+
+    @classmethod
+    def init(cls):
+        """This will be used to initalize voice module for Text --> Speech"""
+
+
+
+        try:
+
+
+            cls.voice = PiperVoice.load(MODEL)
+            console.print(f"[bold green][+] Successfully loaded Voice Module!")
+
+            return True
+
+
+        except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
+
+
+
+
+
+
+# BELOW IS FOR TESTING 
+if __name__ == "__main__":
+
+    TTS.init()
+
+    TTS.speak_piper(say="Attention, Bluetooth Jamming Detected!")
