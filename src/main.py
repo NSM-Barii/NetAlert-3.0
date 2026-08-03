@@ -11,8 +11,10 @@ import threading, time, sys, argparse
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_tui import TUI, CLI
-from nsm_database import Background_Threads, TTS
+from nsm_cli import CLI
+from nsm_server import Web_Server
+from nsm_monitor import Monitor_Runner
+from nsm_detector import Background_Threads, TTS, Notifications
 #import nsm_server_mcp
 # import nsm_voice_agent
 
@@ -53,7 +55,10 @@ def main():
     parser.add_argument("--bd", type=int, default=None,  help="BLE drop score threshold (default: 25)")
     parser.add_argument("-ntfy", metavar="TOPIC",      help="ntfy topic for push notifications (e.g. my-topic-123)")
     parser.add_argument("--help", "-h", action="store_true",  help="Show this help message")
-    parser.add_argument("--obs",  action="store_true", help="Obfuscate MACs and SSIDs in the TUI")
+    parser.add_argument("--obs",  action="store_true", help="Obfuscate MACs and SSIDs on the dashboard")
+    parser.add_argument("--headless", action="store_true", help="Skip the interactive setup — use flags + defaults (for 24/7 / systemd)")
+    parser.add_argument("--calm", type=int, default=None, help="Voice status announcement interval when calm (minutes, default 30)")
+    parser.add_argument("--jam",  type=int, default=None, help="Voice announcement interval during a jam (minutes, default 3)")
 
 
     args = parser.parse_args()
@@ -70,6 +75,8 @@ def main():
     if args.ntfy is not None:  Variables.ntfy_ble_path    = Variables.ntfy_wifi_path = args.ntfy
     if args.bu   is not None:  Variables.pct_set_unstable = args.bu
     if args.bd   is not None:  Variables.pct_set_drop     = args.bd
+    if args.calm is not None:  Variables.watcher_calm     = args.calm * 60
+    if args.jam  is not None:  Variables.watcher_jam      = args.jam  * 60
 
 
 
@@ -77,10 +84,17 @@ def main():
     
 
 
-    CLI.main()
+    CLI.main(headless=args.headless)
     TTS.init(); TTS.speak_piper(say="Yoda, Made by NSM Bari, now up and running!")
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
-    TUI().run()
+
+    Web_Server.init()
+    Monitor_Runner.main()
+    Notifications.start_hourly()
+
+    try:
+        while True: time.sleep(1)
+    except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
 
 
 

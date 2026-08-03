@@ -81,17 +81,21 @@ class Variables():
 
     # TTS
     jammed = False
+    esp_ip = False   # set to an ESP32 LED-server IP to enable the LED output (parked until then)
     tts_cooldown = 30
-    watcher_cooldown = 60 * 5
+    watcher_calm = 60 * 30
+    watcher_jam  = 60 * 3
     time_without_incidents = time.time()
 
     
 
     # MONITORING VARS
     iface_monitor = "wlan1"  # FOR MONITOR MODE
+    ble_adapter   = False    # BlueZ hci name for BLE, e.g. hci1 (False = system default)
     
-    ntfy_ble_path  = False   
+    ntfy_ble_path  = False
     ntfy_wifi_path = False
+    ntfy_hourly          = 60 * 60
     notify_client_events = False
     tts_interval         = 600
     
@@ -100,6 +104,7 @@ class Variables():
 
     wifi_client_idle    = 120
     wifi_client_offline = 600
+    wifi_ap_stale       = 60
 
     wifi_hop_delay = .25
     wifi_hops      = [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]

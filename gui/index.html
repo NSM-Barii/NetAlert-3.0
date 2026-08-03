@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YODA — RF Detection</title>
+<style>
+    :root{
+        --bg:#07090f; --bg2:#0d1018; --bg3:#141824; --border:#1e2536;
+        --text:#c9d4e8; --dim:#65748f; --dim2:#3a465e;
+        --green:#22e39a; --cyan:#38bdf8; --yellow:#f5b942; --red:#ff4060; --purple:#a882ff;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'DejaVu Sans',system-ui,sans-serif;padding:20px;min-height:100vh}
+    .mono{font-family:'DejaVu Sans Mono',ui-monospace,monospace}
+    .wrap{max-width:1500px;margin:0 auto}
+
+    header{display:flex;justify-content:space-between;align-items:center;
+        background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 22px;margin-bottom:16px}
+    .logo{font-size:22px;font-weight:700;letter-spacing:6px;color:var(--green)}
+    .logo span{color:var(--dim);font-size:11px;letter-spacing:3px;margin-left:12px}
+    .live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.4s infinite}
+    .dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+    @keyframes pulse{50%{opacity:.35}}
+
+    /* JAM BANNER */
+    .jam{border-radius:6px;padding:16px 22px;margin-bottom:16px;border:1px solid var(--border);
+        background:var(--bg2);display:flex;align-items:center;gap:16px;transition:.3s}
+    .jam .icon{font-size:26px}
+    .jam .txt{font-size:18px;font-weight:700;letter-spacing:1px}
+    .jam .sub{font-size:12px;color:var(--dim);margin-top:2px}
+    .jam.clear{border-color:#1c3a2e}
+    .jam.clear .txt{color:var(--green)}
+    .jam.alert{border-color:var(--red);background:rgba(255,64,96,.08);animation:flash 1s infinite}
+    .jam.alert .txt{color:var(--red)}
+    @keyframes flash{50%{background:rgba(255,64,96,.16)}}
+
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:16px 20px;position:relative;overflow:hidden}
+    .card::after{content:'';position:absolute;left:0;bottom:0;right:0;height:2px;background:var(--accent,var(--cyan));opacity:.7}
+    .card .label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim2);margin-bottom:8px}
+    .card .val{font-size:32px;line-height:1;color:var(--accent,var(--cyan))}
+    .card .sub{font-size:11px;color:var(--dim2);margin-top:5px}
+
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    .panel h2{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);
+        padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg3);display:flex;justify-content:space-between}
+    table{width:100%;border-collapse:collapse}
+    th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim2);text-align:left;padding:9px 14px;border-bottom:1px solid var(--border)}
+    td{font-size:13px;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--dim)}
+    tbody tr:last-child td{border:none}
+    tbody tr:hover td{background:rgba(56,189,248,.04)}
+    .tag{font-size:10px;padding:2px 7px;border-radius:3px;background:rgba(56,189,248,.1);color:var(--cyan)}
+    .tag.off{background:rgba(255,64,96,.12);color:var(--red)}
+    .tag.idle{background:rgba(245,185,66,.12);color:var(--yellow)}
+    tr.ap.has{cursor:pointer}
+    tr.client td{background:var(--bg);color:var(--dim2)}
+    .chev{color:var(--dim2);font-size:10px}
+    .empty{padding:34px;text-align:center;color:var(--dim2);font-size:12px;letter-spacing:1px}
+    .scroll{max-height:52vh;overflow-y:auto}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+    <header>
+        <div class="logo">YODA<span>PASSIVE RF DETECTION</span></div>
+        <div class="live"><span class="dot" id="dot"></span><span id="status">CONNECTING</span><span class="mono" id="clock"></span></div>
+    </header>
+
+    <div class="jam clear" id="jam">
+        <div class="icon" id="jam-icon">🛡</div>
+        <div>
+            <div class="txt" id="jam-txt">SYSTEM NOMINAL</div>
+            <div class="sub" id="jam-sub">no bluetooth jamming detected</div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="card" style="--accent:var(--cyan)"><div class="label">BLE Devices</div><div class="val" id="ble-count">0</div><div class="sub">in range</div></div>
+        <div class="card" style="--accent:var(--green)"><div class="label">WiFi APs</div><div class="val" id="ap-count">0</div><div class="sub">access points</div></div>
+        <div class="card" style="--accent:var(--purple)"><div class="label">WiFi Clients</div><div class="val" id="cl-count">0</div><div class="sub">associated</div></div>
+        <div class="card" style="--accent:var(--red)"><div class="label">Drop Score</div><div class="val" id="drop">0<span style="font-size:16px">%</span></div><div class="sub">BLE dropout</div></div>
+        <div class="card" style="--accent:var(--yellow)"><div class="label">Unstable</div><div class="val" id="unstable">0<span style="font-size:16px">%</span></div><div class="sub">rotating MACs</div></div>
+    </div>
+
+    <div class="grid">
+        <div class="panel">
+            <h2>Bluetooth / BLE <span class="mono dim" id="ble-n"></span></h2>
+            <div class="scroll"><table>
+                <thead><tr><th>MAC</th><th>Name</th><th>Vendor</th><th>RSSI</th><th>State</th></tr></thead>
+                <tbody id="ble-tbody"><tr><td class="empty" colspan="5">AWAITING DEVICES…</td></tr></tbody>
+            </table></div>
+        </div>
+        <div class="panel">
+            <h2>WiFi Access Points <span class="mono dim" id="wifi-n"></span></h2>
+            <div class="scroll"><table>
+                <thead><tr><th>BSSID</th><th>SSID</th><th>Vendor</th><th>Ch</th><th>RSSI</th><th>Clients</th></tr></thead>
+                <tbody id="wifi-tbody"><tr><td class="empty" colspan="6">AWAITING APs…</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const $ = id => document.getElementById(id);
+
+    function tick(){ $('clock').textContent = new Date().toLocaleTimeString(); }
+    tick(); setInterval(tick, 1000);
+
+    function rssiColor(r){ if(r==null) return 'var(--dim2)'; if(r>-60) return 'var(--green)'; if(r>-75) return 'var(--yellow)'; return 'var(--red)'; }
+    function stateTag(s){ const c = s==='offline'?'off':(s==='idle'?'idle':''); return `<span class="tag ${c}">${s}</span>`; }
+
+    const expanded = new Set();
+    let D = null;
+
+    async function poll(){
+        try{
+            D = await (await fetch('/data')).json();
+            const d = D;
+
+            $('dot').className = 'dot';
+            $('status').textContent = 'LIVE';
+
+            // JAM STATE
+            const jam = $('jam');
+            if(d.ble.jammed){
+                jam.className = 'jam alert';
+                $('jam-icon').textContent = '⚠';
+                $('jam-txt').textContent  = 'BLUETOOTH JAMMING DETECTED';
+                $('jam-sub').textContent  = `drop score ${d.ble.drop_pct}%  ·  investigate immediately`;
+            }else{
+                jam.className = 'jam clear';
+                $('jam-icon').textContent = '🛡';
+                $('jam-txt').textContent  = 'SYSTEM NOMINAL';
+                $('jam-sub').textContent  = 'no bluetooth jamming detected';
+            }
+
+            // STATS
+            $('ble-count').textContent = d.ble.count;
+            $('ap-count').textContent  = d.wifi.ap_count;
+            $('cl-count').textContent  = d.wifi.client_count;
+            $('drop').innerHTML        = d.ble.drop_pct + '<span style="font-size:16px">%</span>';
+            $('unstable').innerHTML    = d.ble.unstable_pct + '<span style="font-size:16px">%</span>';
+            $('ble-n').textContent     = d.ble.count;
+            $('wifi-n').textContent    = d.wifi.ap_count;
+
+            // BLE TABLE
+            const ble = d.ble.devices;
+            $('ble-tbody').innerHTML = ble.length ? ble.map(x => `<tr>
+                <td class="mono">${x.mac}</td>
+                <td>${x.name || '<span style="color:var(--dim2)">—</span>'}</td>
+                <td>${x.vendor || '<span style="color:var(--dim2)">—</span>'}</td>
+                <td class="mono" style="color:${rssiColor(x.rssi)}">${x.rssi ?? '—'}</td>
+                <td>${stateTag(x.status)}</td></tr>`).join('')
+                : '<tr><td class="empty" colspan="5">NO DEVICES</td></tr>';
+
+            // WIFI TABLE
+            paintWifi();
+
+        }catch(e){
+            $('dot').className = 'dot off';
+            $('status').textContent = 'OFFLINE';
+        }
+    }
+    function paintWifi(){
+        if(!D) return;
+        const aps = D.wifi.aps;
+        $('wifi-tbody').innerHTML = aps.length ? aps.map(a => {
+            const open = expanded.has(a.bssid), has = a.clients.length > 0;
+            const head = `<tr class="ap${has?' has':''}" data-bssid="${a.bssid}">
+                <td class="mono">${a.bssid}</td>
+                <td>${a.ssid || '<span style="color:var(--dim2)">‹hidden›</span>'}</td>
+                <td>${a.vendor || '<span style="color:var(--dim2)">—</span>'}</td>
+                <td class="mono">${a.channel ?? '—'}</td>
+                <td class="mono" style="color:${rssiColor(a.rssi)}">${a.rssi ?? '—'}</td>
+                <td class="mono">${has?`<span class="chev">${open?'▾':'▸'}</span> `:''}${a.clients.length}</td></tr>`;
+            const kids = (open && has) ? a.clients.map(c => `<tr class="client">
+                <td></td>
+                <td class="mono" colspan="3">↳ ${c.mac}${c.vendor?`  <span style="color:var(--dim2)">· ${c.vendor}</span>`:''}</td>
+                <td class="mono" style="color:${rssiColor(c.rssi)}">${c.rssi ?? '—'}</td>
+                <td>${stateTag(c.status)}</td></tr>`).join('') : '';
+            return head + kids;
+        }).join('') : '<tr><td class="empty" colspan="6">NO APs</td></tr>';
+    }
+
+    $('wifi-tbody').addEventListener('click', e => {
+        const row = e.target.closest('tr.ap.has'); if(!row) return;
+        const b = row.dataset.bssid;
+        expanded.has(b) ? expanded.delete(b) : expanded.add(b);
+        paintWifi();
+    });
+
+    poll(); setInterval(poll, 1000);
+</script>
+</body>
+</html>

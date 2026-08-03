@@ -1,0 +1,880 @@
+# THIS FILE HOUSES THE DETECTION ENGINE  (BLE drop-score / unstable-ratio / jamming)
+
+
+# ETC IMPORTS
+import requests, subprocess, threading, time, wave, os, tempfile
+from pathlib import Path
+from piper.voice import PiperVoice
+
+
+# NSM IMPORTS
+from nsm_vars import Variables
+
+
+# CONSTANTS
+console  = Variables.console
+TTS_WAV  = os.path.join(tempfile.gettempdir(), f"tts_{os.getpid()}.wav")
+MODEL    = str(Path(__file__).parent.parent / "database" / "en_US-lessac-medium.onnx")
+
+
+
+class Detector():
+    """Measures detections — houses BLE + WiFi anomaly scoring and the ESP LED output."""
+
+
+
+    class BLE():
+        """BLE detection — aggregate drop-score + unstable-ratio scoring and alerting."""
+
+
+        alpha             = 0.05
+        avg               = None
+        last_count        = 0
+        prev_drop_pct     = 0
+        prev_unstable_pct = 0
+        good_drop         = True
+        good_unstable     = True
+        unstable_devices  = set()
+        started           = None
+        floor             = 5
+        jam_start         = 0
+        thaw_after        = 60 * 20
+        thaw_alpha        = 0.005
+        drop_streak       = 0
+
+
+        @classmethod
+        def _average_ratio(cls, current_count):
+            """This will track average device count over time, frozen while jammed"""
+
+
+            if cls.avg is None: cls.avg = float(current_count); return 0.0
+
+            if not Variables.jammed:
+                alpha   = 0.01 if current_count < cls.avg else cls.alpha
+                cls.avg = (cls.avg * (1 - alpha)) + (current_count * alpha)
+
+            elif time.time() - cls.jam_start > cls.thaw_after:
+                cls.avg = (cls.avg * (1 - cls.thaw_alpha)) + (current_count * cls.thaw_alpha)
+
+            if cls.avg == 0: return 0.0
+            score = (current_count - cls.avg) / cls.avg
+
+            return round(score, 3)
+
+
+        @classmethod
+        def _score(cls, total, unstables, count):
+            """Turn the counts into drop/unstable % and fire rising/recovering alerts"""
+
+
+            unstable_ratio = unstables / total
+            drop_score     = ((cls.avg or 1) - count) / (cls.avg or 1)
+
+            unstable_pct = round(unstable_ratio * 100, 2)
+            drop_pct     = round(drop_score * 100, 2)
+
+
+            pct_set_unstable = Variables.pct_set_unstable
+            pct_set_drop     = Variables.pct_set_drop
+
+            console.print("[dim][+] Called: score[/dim]")
+
+            # BAD
+            if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
+
+                console.print("[dim][+] Called: unstable[/dim]")
+
+                if cls.good_unstable:
+                    console.print(f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}")
+                    Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score rising", cause=f"Unstable Devices: {unstables}/{total}")
+                    cls.good_unstable = False
+
+            # GOOD
+            elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
+
+                if not cls.good_unstable:
+                    console.print(f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}")
+                    Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score recovering", cause=f"Unstable Devices: {unstables}/{total}", priority="default")
+                    cls.good_unstable = True
+
+
+            if drop_pct > pct_set_drop and cls.avg >= cls.floor: cls.drop_streak += 1
+            else:                                                cls.drop_streak = 0
+
+
+            # BAD
+            if cls.drop_streak >= 2 and cls.good_drop:
+
+                console.print("[dim][+] Called: drop[/dim]")
+                console.print(f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}")
+
+                n = cls.last_count - count
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count} -> {count}  ({n} dropped)\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
+
+                cls.good_drop    = False
+                cls.jam_start    = time.time()
+                Variables.jammed = True
+                Variables.time_without_incidents = time.time()
+                TTS.speak_piper(say="Attention: Bluetooth Jamming Attack detected!", force=True)
+
+            # GOOD
+            elif not cls.good_drop and count >= (cls.avg or 1) * 0.8:
+
+                console.print(f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}")
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}", priority="default")
+
+                cls.good_drop    = True
+                Variables.jammed = False
+                Variables.time_without_incidents = time.time()
+
+
+            cls.prev_drop_pct     = drop_pct
+            cls.prev_unstable_pct = unstable_pct
+
+
+        @classmethod
+        def evaluate(cls, live_map, count):
+            """Per-cycle BLE detection: classify each device, prune stale, then score the aggregate. Returns total tracked."""
+
+
+            now = time.time()
+            if cls.started is None: cls.started = now
+
+
+            for mac, dev in list(live_map.items()):
+
+                use          = f"[dim][>] {mac} ->"
+                weight       = 0
+                rssi_list    = dev["rssi_list"]
+                time_missing = now - dev["last_seen"]
+
+
+                # // C++ IS SUPERIOR
+                if len(rssi_list) >= 3 and max(rssi_list) - min(rssi_list) > 30:
+                    weight += 1
+                    data = (f"{use}[yellow] rssi spike")
+
+                    console.print(data)
+
+                if (time_missing > 5):
+                    weight += 1
+                    #console.print(f"{use}[yellow] short time gap")
+
+                if (time_missing > 10):
+                    weight += 2
+                    data = (f"{use}[yellow] long time gap")
+
+                    console.print(data)
+
+
+                if (weight >= 2): dev["unstable_hits"] += 1
+                else:
+                    if dev["unstable_hits"] > 0:
+                        dev["unstable_hits"] -= 1
+
+
+                if (dev["unstable_hits"] >= 2):
+                    if dev["status"] != "unstable":
+                        console.print(f"[bold red][!] Unstable Device:[yellow] {mac}")
+                        cls.unstable_devices.add(mac)
+                        dev["status"] = "unstable"
+                        dev["stable_count"] = 0
+
+                        vendor = dev["data"].get("vendor") or "Unknown"
+                        Variables.push_event(f"Alert. Unstable BLE device detected. {vendor}")
+
+                else:
+                    if (dev["status"] == "unstable"):
+                        dev["stable_count"] += 1
+
+                        if (dev["stable_count"] >= 2):
+                            dev["status"] = "stable"
+                            dev["stable_count"] = 0
+                            cls.unstable_devices.discard(mac)
+                            data = (f"[bold green][+] Device now stable:[yellow] {mac}")
+                            console.print(data)
+
+
+                """
+                Proverbs 27:17 As iron sharpens iron, so a friend sharpens another.
+                """
+
+
+                if time_missing > 30 and not Variables.jammed:
+                    data = (f"[bold yellow][-] Removing stale device:[/bold yellow] {mac}")
+                    console.print(data)
+                    cls.unstable_devices.discard(mac)
+                    del live_map[mac]
+
+
+
+            total     = len(live_map) or 1
+            unstables = len({mac for mac in cls.unstable_devices if mac in live_map})
+
+            average = cls._average_ratio(current_count=count)
+            Detector.LED.push_color(average_ratio=average)
+            cls._score(total=total, unstables=unstables, count=count)
+
+            cls.last_count        = count
+            Variables.ble_current = total
+
+
+            # NEW MAX / MIN DEVICE COUNT
+            if total > Variables.ble_max:
+                Variables.ble_max = total
+                data = (f"[bold green][!] New BLE max:[/bold green] {total} devices")
+                console.print(data)
+                Variables.push_event(f"New maximum. {total} Bluetooth devices detected")
+
+            if total < Variables.ble_min:
+                Variables.ble_min = total
+                data = (f"[bold red][!] New BLE min:[/bold red] {total} devices")
+                console.print(data)
+                Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
+
+
+
+    class WiFi():
+        """WiFi detection — consumes normalized frame events. Deauth today; AP-drop / deauth-flood next."""
+
+
+        last_deauth     = 0
+        deauth_cooldown = 30
+        alpha           = 0.05
+        hourly          = {}
+        pct_set         = 25
+        good_ap         = True
+        good_cl         = True
+        interval        = 60
+
+
+        @classmethod
+        def consume(cls, ev):
+            """Entry point — take one normalized WiFi frame event and run detection on it.
+
+            ev = {"sub": <subtype>, "src": <ta>, "dst": <ra>, "ssid": <str|None>, "rssi": <int>, "channel": <str>}
+            The same shape a tshark line OR the rust engine produces, so detection never cares who parsed it.
+            """
+
+
+            # DEAUTH  (management subtype 0x0c)
+            if ev["sub"] == 0x0c: cls._deauth(ev)
+
+
+        @classmethod
+        def _deauth(cls, ev):
+            """Deauth frame detected -> alert. Cooldown-gated so a flood doesn't spam the phone."""
+
+
+            src     = ev["src"]
+            dst     = ev["dst"]
+            channel = ev["channel"]
+
+            console.print(f"[bold red][DEAUTH][/bold red]  [red]{src}[/red]  [dim]->[/dim]  [red]{dst}[/red]  [dim]ch:[/dim][bold cyan]{channel}[/bold cyan]")
+
+            if time.time() - cls.last_deauth <= cls.deauth_cooldown: return
+
+
+            # who got hit? look the src/dst up against the AP presence map the monitor keeps
+            aps     = Variables.live_map_wifi
+            ap_ssid = aps[src]["ssid"] if src in aps else (aps[dst]["ssid"] if dst in aps else None)
+
+            target  = None
+            for ap in aps.values():
+                if dst in ap.get("clients", {}):
+                    target = dst
+                    break
+
+            Variables.push_event(f"Deauth frame detected on channel {channel}")
+            Notifications.deauth(src=src, dst=dst, channel=channel, ap_ssid=ap_ssid, target=target)
+            TTS.speak_piper(say=f"Warning: WiFi deauthentication attack on channel {channel or 'unknown'}", force=True)
+
+            cls.last_deauth = time.time()
+
+
+        @classmethod
+        def _average(cls, hour, key, current):
+            """This will track the average per hour for aps and clients over time, frozen while jammed"""
+
+
+            slot = cls.hourly.setdefault(hour, {})
+
+            if key not in slot: slot[key] = float(current); return 0.0
+
+            if not Variables.jammed:
+                alpha     = 0.01 if current < slot[key] else cls.alpha
+                slot[key] = (slot[key] * (1 - alpha)) + (current * alpha)
+
+            if slot[key] == 0: return 0.0
+
+            return round((current - slot[key]) / slot[key], 3)
+
+
+        @classmethod
+        def _score(cls, aps, clients):
+            """This will check ap/client counts against the hourly baseline and alert on deviations"""
+
+
+            hour = time.localtime().tm_hour
+
+            ap_ratio = cls._average(hour, "ap", aps)
+            cl_ratio = cls._average(hour, "cl", clients)
+
+            ap_pct = round(abs(ap_ratio) * 100, 2)
+            cl_pct = round(abs(cl_ratio) * 100, 2)
+
+
+            # AP
+            if ap_pct > cls.pct_set and cls.good_ap:
+
+                word = "spiked" if ap_ratio > 0 else "dropped"
+                console.print(f"[bold red][!] AP count {word}:[/bold red] {aps} aps   {ap_pct}% off baseline")
+
+                Variables.push_event(f"Alert. WiFi AP count {word} to {aps}")
+                Notifications.device_count(device_count=aps, title=f"WiFi APs {word}")
+                TTS.speak_piper(say=f"Attention: WiFi access point count has {word}", force=True)
+
+                cls.good_ap = False
+
+            elif ap_pct < cls.pct_set / 2 and not cls.good_ap:
+
+                console.print(f"[bold green][+] AP count back to baseline:[/bold green] {aps} aps")
+                Notifications.device_count(device_count=aps, title="WiFi APs back to baseline", priority="default")
+
+                cls.good_ap = True
+
+
+            # CLIENT
+            if cl_pct > cls.pct_set and cls.good_cl:
+
+                word = "spiked" if cl_ratio > 0 else "dropped"
+                console.print(f"[bold red][!] Client count {word}:[/bold red] {clients} clients   {cl_pct}% off baseline")
+
+                Variables.push_event(f"Alert. WiFi client count {word} to {clients}")
+                Notifications.device_count(device_count=clients, title=f"WiFi Clients {word}")
+
+                cls.good_cl = False
+
+            elif cl_pct < cls.pct_set / 2 and not cls.good_cl:
+
+                console.print(f"[bold green][+] Client count back to baseline:[/bold green] {clients} clients")
+                Notifications.device_count(device_count=clients, title="WiFi Clients back to baseline", priority="default")
+
+                cls.good_cl = True
+
+
+        @classmethod
+        def watch(cls):
+            """This will sample the area every interval and score it against the baseline"""
+
+
+            def worker():
+
+                while True:
+
+                    time.sleep(cls.interval)
+
+                    aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
+                    clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
+
+                    cls._score(aps=aps, clients=clients)
+
+
+            threading.Thread(target=worker, args=(), daemon=True).start()
+            console.print(f"[bold green][+] Successfully started WiFi baseline watcher!")
+
+
+
+    class LED():
+        """Parked ESP32 LED output — dormant unless Variables.esp_ip is set."""
+
+
+        @classmethod
+        def push_color(cls, average_ratio, timeout=3):
+            """ratio -> color -> POST to an ESP32 LED server.  Only fires when Variables.esp_ip is configured."""
+
+
+            # Green=Safe  Yellow=Caution  Orange=Warning  Red=Danger  Purple=Abnormal/Emergency
+            if   average_ratio <= 0.0:  color = "green"
+            elif average_ratio <= 0.25: color = "yellow"
+            elif average_ratio <= 0.6:  color = "orange"
+            elif average_ratio <= 1.0:  color = "red"
+            else:                       color = "purple"
+
+
+            if not Variables.esp_ip: return color   # parked until an ESP is wired in
+
+            try:
+
+                url      = f"http://{Variables.esp_ip}/?color={color}"
+                response = requests.post(url=url, timeout=timeout)
+
+                if response.status_code in [200, 204]: console.print(f"[bold green][+] LED pushed:[/bold green] {color} --> {Variables.esp_ip}")
+                else:                                   console.print(f"[bold red][-] Failed to push to LED Server:[bold yellow] Status code: {response.status_code}")
+
+            except Exception as e: console.print(f"[bold red]LED Exception Error:[bold yellow] {e}")
+
+            return color
+
+
+
+
+
+class Notifications():
+    """This will be used to notify user of events happening"""
+
+
+    # =======
+    #  WiFi
+    # =======
+    @classmethod
+    def deauth(cls, src:str, dst:str, channel, ap_ssid:str=None, target:str=None, priority="max"):
+        """This will cls.push_ntfy <-- deauth frame detected"""
+
+        headers = {
+            "Title": "Deauth Frame Detected",
+            "Priority": priority,
+        }
+
+        target_str = "broadcast (all clients)" if dst == "ff:ff:ff:ff:ff:ff" else (target or dst)
+        ap_str     = f"  |  AP: {ap_ssid}" if ap_ssid else ""
+        data       = f"Src: {src}  ->  {target_str}\nCh: {channel}{ap_str}"
+
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
+
+
+    @classmethod
+    def client_left(cls, ssid:str, client_mac:str, vendor_client:str, duration:str, priority="max"):
+        """This will cls.push_ntfy <-- client_left"""
+
+        headers = {
+            "Title": f"Client left {ssid}",
+            "Priority": priority,
+        }
+        data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Duration: {duration}"
+
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
+
+
+    @classmethod
+    def client_returned(cls, ssid:str, client_mac:str, vendor_client:str, duration:str, priority="default"):
+        """This will cls.push_ntfy <-- client_returned"""
+
+        headers = {
+            "Title": f"Client returned to {ssid}",
+            "Priority": priority,
+        }
+        data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Away for: {duration}"
+
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
+
+
+    # ======
+    #  BLE
+    # =====
+    @classmethod
+    def device_count(cls, device_count:int, title:str, priority="max"):
+        """This will be used to update user on max/min device count"""
+
+
+        headers = {
+            "Title": f"{title}",
+            "Priority": priority,
+        }
+        data = f"{device_count} devices"
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
+    @classmethod
+    def push_ble_device(cls, mac:str, vendor:str, name:str=None, priority="low"):
+        """This will cls.push_ntfy <-- new BLE device"""
+
+        headers = {
+            "Title": "New BLE Device",
+            "Priority": priority,
+        }
+        data = f"Name: {name or 'Unknown'}  MAC: {mac}  Vendor: {vendor or 'Unknown'}"
+
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
+    @classmethod
+    def unstable_devices_pct(cls,  unstable_pct:float, title:str="BLE Instability Alert", cause="Possible BLE/Bluetooth Jamming", priority="max"):
+        """This will cls.push_ntfy <-- unstable_devices"""
+
+        headers = {
+            "Title": title,
+            "Priority": priority,
+        }
+        data = f"Unstable Percentage: {unstable_pct}%\n{cause}"
+
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+    
+    @classmethod
+    def drop_pct(cls, drop_pct:float, title:str = "BLE Device Drop Alert", cause="A large spike of BLE/Bluetooth devices have dropped in a short timeframe!", priority="max"):
+        """This will cls.push_ntfy <-- drop_score"""
+
+        headers = {
+            "Title": title,
+            "Priority": priority,
+        }
+        data = f"Drop Percentage: {drop_pct}%\n{cause}"
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
+    # ==========
+    #  HEARTBEAT
+    # ==========
+    @classmethod
+    def hourly_summary(cls):
+        """This will push a periodic area summary — ble / aps / clients / jam"""
+
+
+        ble     = Variables.ble_current
+        aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
+        clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
+        minutes = int((time.time() - Variables.time_without_incidents) / 60)
+
+        jam = "JAMMED" if Variables.jammed else "clear"
+
+        headers = {
+            "Title": f"Hourly Status — {jam}",
+            "Priority": "high" if Variables.jammed else "low",
+        }
+        data = f"BLE: {ble}   APs: {aps}   Clients: {clients}\nJam: {jam}   {minutes} min without incidents"
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
+    @classmethod
+    def start_hourly(cls):
+        """This will spawn the hourly summary thread (only if an ntfy path is set)"""
+
+
+        if not (Variables.ntfy_ble_path or Variables.ntfy_wifi_path): return
+
+        def worker():
+
+            while True:
+                time.sleep(Variables.ntfy_hourly)
+                cls.hourly_summary()
+
+        threading.Thread(target=worker, args=(), daemon=True).start()
+        console.print(f"[bold green][+] Successfully started hourly NTFY summary!")
+
+
+    @classmethod
+    def _push_ntfy(cls, headers, data, type="ble"):
+        """This will be used to push notifications to a server to view via (mainly) phone"""
+        
+        
+        if type   == "wifi": ntfy_path = Variables.ntfy_wifi_path
+        elif type == "ble":  ntfy_path = Variables.ntfy_ble_path
+        else: return False
+
+        if not ntfy_path: return False
+
+        url = f"https://ntfy.sh/{ntfy_path}"
+
+        try:
+
+            response = requests.post(url=url, headers=headers, data=data.encode("utf-8"))
+
+            code = response.status_code
+            
+            """
+            For rate limiting:
+            code":42908
+            error":"limit reached: daily message quota reached; increase your limits with a paid plan
+            
+            """
+
+            if code in [200, 204]: console.print(f"[bold green][+] NTFY Notification successfully pushed!")
+            else:                  console.print(f"[bold red][-] NTFY Notification Failed to push!")
+        
+
+        except Exception as e: console.print(f"[bold red][!] Exception error:[bold yellow] Failed to make requests.post!")
+
+
+
+
+class Background_Threads:
+    """This module will house background permanent running threads"""
+
+    # CLASS VARIABLES
+    hop = True
+    channel = 0
+
+
+    @classmethod
+    def channel_hopper(cls, set_channel=False, verbose=False):
+        """This method will be responsible for automatically hopping channels"""
+
+
+        def hopper():
+
+            iface    = Variables.iface_monitor
+            delay    = Variables.wifi_hop_delay
+            all_hops = Variables.wifi_hops
+
+
+ 
+            if set_channel:
+                cls.hop = False
+                time.sleep(2)
+
+                try:
+                    subprocess.Popen(
+                        [
+                            "sudo",
+                            "iw",
+                            "dev",
+                            iface,
+                            "set",
+                            "channel",
+                            str(set_channel),
+                        ],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        stdin=subprocess.DEVNULL,
+                        start_new_session=True,
+                    )
+
+                except Exception as e:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+     
+            while cls.hop:
+                for channel in all_hops:
+                    try:
+              
+                        subprocess.Popen(
+                            [
+                                "sudo",
+                                "iw",
+                                "dev",
+                                iface,
+                                "set",
+                                "channel",
+                                str(channel),
+                            ],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            stdin=subprocess.DEVNULL,
+                            start_new_session=True,
+                        )
+
+                        cls.channel = channel
+                        if verbose: console.print( f"[bold green]Hopping on Channel:[bold yellow] {channel}")
+
+                        time.sleep(delay)
+
+                    except Exception as e: console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+
+        cls.hop = True
+        threading.Thread(target=hopper, args=(), daemon=True).start()
+
+
+    @staticmethod
+    def set_monitor_mode(iface):
+        """Put iface into monitor mode"""
+
+        if Variables.iface_monitor:
+            subprocess.run(f"sudo ip link set {iface} down; sudo iw dev {iface} set type monitor; sudo ip link set {iface} up", shell=True)
+
+
+    @staticmethod
+    def change_iface_mode(iface, mode=["managed", "monitor"], verbose=True):
+        """This method will be resposnible for chaning iface mode"""
+
+        # if mode == "monitor": return
+        try:
+            if mode == "monitor" or mode == 2:
+                # os.system(f"sudo ip link set {iface} down; sudo iw dev {iface} type monitor; sudo ip link set {iface} up")
+
+                subprocess.run(
+                    ["sudo", "ip", "link", "set", f"{iface}", "down"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                subprocess.run(
+                    ["sudo", "iw", "dev", f"{iface}", "set", "type", "monitor"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                subprocess.run(
+                    ["sudo", "ip", "link", "set", f"{iface}", "up"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+            elif mode == "managed" or mode == 1:
+                subprocess.run(
+                    ["sudo", "ip", "link", "set", f"{iface}", "down"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                subprocess.run(
+                    ["sudo", "iw", "dev", f"{iface}", "set", "type", "managed"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                subprocess.run(
+                    ["sudo", "ip", "link", "set", f"{iface}", "up"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+            else:
+                console.print(
+                    "[bold red][-] non-valid choice picked for change_iface_mode!"
+                )
+                return False
+
+            check = subprocess.run(
+                ["iw", "dev", f"{iface}", "info"], capture_output=True, text=True
+            )
+            if (
+                "type monitor" in check.stdout.lower()
+                or "type managed" in check.stdout.lower()
+            ):
+                console.print(
+                    f"[bold green][+] Successfully changed iface_mode --> {mode}!"
+                )
+
+        except Exception as e:
+            console.print(e)
+
+        finally:
+            console.print("[bold red] Ctrl + c x2 == EXIT\n")
+
+
+
+class TTS():
+    """This class will be reponsible for holding tts logic"""
+
+
+    speaking   = False
+    last_spoke = False
+    waiting     = []
+
+
+
+    @classmethod
+    def _audio_env(cls):
+        """Route root's audio to the real user's PipeWire session (sudo sets SUDO_UID)."""
+
+
+        env = dict(os.environ)
+        uid = env.get("SUDO_UID")
+        if uid: env["XDG_RUNTIME_DIR"] = f"/run/user/{uid}"
+        return env
+
+
+
+    @classmethod
+    def speak_piper(cls, say, verbose=True, force=False, jam=False):
+        """This will be used to speak tts out of a-play"""
+
+
+        def worker():
+            """worker"""
+
+            try:
+
+                while True:
+
+                    with Variables.LOCK:
+                        if cls.speaking and not force: return False
+                        if not cls.speaking: cls.speaking = True; break
+
+                    time.sleep(.1)
+
+
+                cls.last_spoke = time.time()
+
+
+                with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
+                if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
+                subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
+            
+                with Variables.LOCK: cls.speaking = False; return True
+
+
+            except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
+
+ 
+        if time.time() - cls.last_spoke < Variables.tts_cooldown and not force: return False
+        console.print(time.time() - cls.last_spoke)
+        threading.Thread(target=worker, args=(), daemon=True).start()
+
+
+
+    @classmethod
+    def _watcher(cls):
+        """This method will be used to announce at a interval the status of jams detected"""
+
+
+        def worker():
+            """Worker method"""
+
+                
+            while True:
+
+                time.sleep(Variables.watcher_jam if Variables.jammed else Variables.watcher_calm)
+
+                ble     = Variables.ble_current
+                aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
+                clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
+
+                minutes = int((time.time() - Variables.time_without_incidents) / 60)
+
+                if Variables.jammed: say = f"Warning: Bluetooth jamming ongoing for {minutes} minutes"
+                else:                say = f"Area status: {ble} bluetooth devices, {aps} access points, {clients} clients. {minutes} minutes without incidents"
+
+                cls.speak_piper(say=say, force=True)
+
+
+        threading.Thread(target=worker, args=(), daemon=True).start()
+        console.print(f"[bold green][+] Successfully started Watcher thread!")
+
+
+
+
+    @classmethod
+    def init(cls):
+        """This will be used to initalize voice module for Text --> Speech"""
+
+
+
+        try:
+
+            cls.voice = PiperVoice.load(MODEL)
+
+            cls._watcher()
+            console.print(f"[bold green][+] Successfully loaded Voice Module!")
+ 
+            return True
+
+
+        except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
+
+
+
+
+
+
+# BELOW IS FOR TESTING 
+if __name__ == "__main__":
+
+    TTS.init()
+
+    while True:
+        time.sleep(.1)
+        TTS.speak_piper(say="Attention, Bluetooth Jamming Detected!")
