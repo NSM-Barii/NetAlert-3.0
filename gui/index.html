@@ -6,118 +6,257 @@
 <title>YODA — RF Detection</title>
 <style>
     :root{
-        --bg:#07090f; --bg2:#0d1018; --bg3:#141824; --border:#1e2536;
-        --text:#c9d4e8; --dim:#65748f; --dim2:#3a465e;
-        --green:#22e39a; --cyan:#38bdf8; --yellow:#f5b942; --red:#ff4060; --purple:#a882ff;
+        --bg:#080b11; --panel:#0d121b; --panel2:#111826; --elev:#161f2f;
+        --border:#1b2536; --border2:#243247;
+        --text:#c7d3e4; --dim:#66768f; --dim2:#3a475d;
+        --signal:#4fd1c5; --amber:#f0b445; --violet:#9b8cff;
+        --good:#3ddc84; --warn:#f0b445; --crit:#ff4d6a;
+        --grid:rgba(96,140,170,.045);
+        --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+        --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     }
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:var(--bg);color:var(--text);font-family:'DejaVu Sans',system-ui,sans-serif;padding:20px;min-height:100vh}
-    .mono{font-family:'DejaVu Sans Mono',ui-monospace,monospace}
-    .wrap{max-width:1500px;margin:0 auto}
+    html{color-scheme:dark}
+    body{
+        background:var(--bg); color:var(--text); font-family:var(--sans);
+        min-height:100vh; padding:20px 22px 0; position:relative;
+        background-image:radial-gradient(ellipse 90% 55% at 50% -10%, #101a2b 0%, var(--bg) 70%);
+    }
+    body::before{
+        content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+        background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+        background-size:44px 44px;
+        -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 0%,transparent 78%);
+                mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 0%,transparent 78%);
+    }
+    .wrap{max-width:1520px; margin:0 auto; position:relative; z-index:1}
+    .mono{font-family:var(--mono)}
+    .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
 
-    header{display:flex;justify-content:space-between;align-items:center;
-        background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:14px 22px;margin-bottom:16px}
-    .logo{font-size:22px;font-weight:700;letter-spacing:6px;color:var(--green)}
-    .logo span{color:var(--dim);font-size:11px;letter-spacing:3px;margin-left:12px}
-    .live{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.4s infinite}
-    .dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
-    @keyframes pulse{50%{opacity:.35}}
+    /* ── HEADER ── */
+    header{display:flex; justify-content:space-between; align-items:center; gap:16px; padding:6px 2px 18px; flex-wrap:wrap}
+    .brand{display:flex; align-items:baseline; gap:14px}
+    .logo{font-family:var(--mono); font-size:23px; font-weight:600; letter-spacing:9px; color:var(--text)}
+    .logo b{color:var(--signal); font-weight:600}
+    .tag{font-family:var(--mono); font-size:10px; letter-spacing:3px; color:var(--dim2); text-transform:uppercase}
+    .hstat{display:flex; align-items:center; gap:18px; font-family:var(--mono); font-size:12px; color:var(--dim)}
+    .live{display:flex; align-items:center; gap:8px; letter-spacing:1px}
+    .dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 9px var(--good); animation:pulse 1.5s infinite}
+    .dot.off{background:var(--crit); box-shadow:0 0 9px var(--crit); animation:none}
+    @keyframes pulse{50%{opacity:.3}}
+    .clock{color:var(--text); letter-spacing:1px}
+    .gh{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; letter-spacing:.5px;
+        color:var(--dim); text-decoration:none; border:1px solid var(--border2); border-radius:6px; padding:6px 10px; transition:.18s}
+    .gh svg{width:14px; height:14px; fill:currentColor; opacity:.85}
+    .gh:hover{color:var(--signal); border-color:var(--signal); box-shadow:0 0 0 1px rgba(79,209,197,.25)}
 
-    /* JAM BANNER */
-    .jam{border-radius:6px;padding:16px 22px;margin-bottom:16px;border:1px solid var(--border);
-        background:var(--bg2);display:flex;align-items:center;gap:16px;transition:.3s}
-    .jam .icon{font-size:26px}
-    .jam .txt{font-size:18px;font-weight:700;letter-spacing:1px}
-    .jam .sub{font-size:12px;color:var(--dim);margin-top:2px}
-    .jam.clear{border-color:#1c3a2e}
-    .jam.clear .txt{color:var(--green)}
-    .jam.alert{border-color:var(--red);background:rgba(255,64,96,.08);animation:flash 1s infinite}
-    .jam.alert .txt{color:var(--red)}
-    @keyframes flash{50%{background:rgba(255,64,96,.16)}}
+    /* ── STATUS BAR ── */
+    .status{display:flex; align-items:center; gap:16px; padding:15px 20px; margin-bottom:18px;
+        border:1px solid var(--border); border-radius:9px; background:linear-gradient(180deg,var(--panel2),var(--panel));
+        position:relative; overflow:hidden}
+    .status::before{content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--good)}
+    .status .icon{font-size:22px; line-height:1}
+    .status .st-txt{font-family:var(--mono); font-size:16px; font-weight:600; letter-spacing:2px; color:var(--good)}
+    .status .st-sub{font-size:12px; color:var(--dim); margin-top:3px; letter-spacing:.3px}
+    .status.alert{background:linear-gradient(180deg,rgba(255,77,106,.12),rgba(255,77,106,.04)); border-color:rgba(255,77,106,.45); animation:flash 1.15s infinite}
+    .status.alert::before{background:var(--crit)}
+    .status.alert .st-txt{color:var(--crit)}
+    @keyframes flash{50%{background:linear-gradient(180deg,rgba(255,77,106,.2),rgba(255,77,106,.07))}}
 
-    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
-    .card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:16px 20px;position:relative;overflow:hidden}
-    .card::after{content:'';position:absolute;left:0;bottom:0;right:0;height:2px;background:var(--accent,var(--cyan));opacity:.7}
-    .card .label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim2);margin-bottom:8px}
-    .card .val{font-size:32px;line-height:1;color:var(--accent,var(--cyan))}
-    .card .sub{font-size:11px;color:var(--dim2);margin-top:5px}
+    /* ── STAT CARDS ── */
+    .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:13px; margin-bottom:18px}
+    .card{background:var(--panel); border:1px solid var(--border); border-radius:9px; padding:15px 16px 8px;
+        display:flex; flex-direction:column; min-height:118px}
+    .card:hover{border-color:var(--border2)}
+    .k-label{font-family:var(--mono); font-size:9.5px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); margin-bottom:auto}
+    .k-val{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:34px; line-height:1; font-weight:600; letter-spacing:-.5px}
+    .k-val .u{font-size:15px; color:var(--dim); margin-left:2px}
+    .spark{width:100%; height:30px; margin-top:6px; display:block}
+    .c-ble  .k-val{color:var(--signal)}
+    .c-ap   .k-val{color:var(--amber)}
+    .c-cl   .k-val{color:var(--violet)}
+    .c-drop .k-val{color:var(--crit)}
+    .c-uns  .k-val{color:var(--warn)}
 
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .panel{background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden}
-    .panel h2{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);
-        padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg3);display:flex;justify-content:space-between}
-    table{width:100%;border-collapse:collapse}
-    th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--dim2);text-align:left;padding:9px 14px;border-bottom:1px solid var(--border)}
-    td{font-size:13px;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--dim)}
-    tbody tr:last-child td{border:none}
-    tbody tr:hover td{background:rgba(56,189,248,.04)}
-    .tag{font-size:10px;padding:2px 7px;border-radius:3px;background:rgba(56,189,248,.1);color:var(--cyan)}
-    .tag.off{background:rgba(255,64,96,.12);color:var(--red)}
-    .tag.idle{background:rgba(245,185,66,.12);color:var(--yellow)}
+    /* ── PANELS ── */
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; padding-bottom:18px}
+    .panel{background:var(--panel); border:1px solid var(--border); border-radius:9px; overflow:hidden; display:flex; flex-direction:column}
+    .p-head{display:flex; align-items:center; justify-content:space-between; padding:12px 17px;
+        background:var(--panel2); border-bottom:1px solid var(--border)}
+    .p-head h2{font-family:var(--mono); font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:var(--text); font-weight:600}
+    .p-head .tick{color:var(--dim2)}
+    .p-ble  h2 .tick{color:var(--signal)}
+    .p-wifi h2 .tick{color:var(--amber)}
+    .p-count{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12px; color:var(--dim)}
+    .scroll{max-height:50vh; overflow-y:auto}
+
+    table{width:100%; border-collapse:collapse}
+    thead th{position:sticky; top:0; z-index:2; font-family:var(--mono); font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase;
+        color:var(--dim2); text-align:left; padding:9px 14px; background:var(--panel2); border-bottom:1px solid var(--border)}
+    tbody td{font-size:13px; padding:9px 14px; border-bottom:1px solid rgba(27,37,54,.6); color:var(--dim)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr.ap:hover td, tbody tr.ble:hover td{background:rgba(79,209,197,.035)}
+    td.name{color:var(--text)}
+    .num-cell{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
     tr.ap.has{cursor:pointer}
-    tr.client td{background:var(--bg);color:var(--dim2)}
-    .chev{color:var(--dim2);font-size:10px}
-    .empty{padding:34px;text-align:center;color:var(--dim2);font-size:12px;letter-spacing:1px}
-    .scroll{max-height:52vh;overflow-y:auto}
-    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-    @media(max-width:1000px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+    tr.ap.has:hover .chev{color:var(--amber)}
+    .chev{color:var(--dim2); font-size:9px; display:inline-block; width:9px}
+    tr.client td{background:rgba(8,11,17,.55)}
+    tr.client .lead{color:var(--dim2)}
+
+    .tag{font-family:var(--mono); font-size:9.5px; letter-spacing:.5px; padding:2px 8px; border-radius:4px;
+        background:rgba(79,209,197,.1); color:var(--signal); text-transform:uppercase}
+    .tag.idle{background:rgba(240,180,69,.12); color:var(--warn)}
+    .tag.off{background:rgba(255,77,106,.12); color:var(--crit)}
+    .tag.uns{background:rgba(255,77,106,.12); color:var(--crit)}
+    .muted{color:var(--dim2)}
+    .empty{padding:38px; text-align:center; color:var(--dim2); font-family:var(--mono); font-size:11px; letter-spacing:1.5px}
+
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-thumb{background:var(--border2); border-radius:3px}
+    ::-webkit-scrollbar-track{background:transparent}
+
+    footer{border-top:1px solid var(--border); padding:16px 2px 22px; margin-top:2px;
+        display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+        font-family:var(--mono); font-size:11px; letter-spacing:.5px; color:var(--dim2)}
+    footer a{color:var(--dim); text-decoration:none; transition:.18s}
+    footer a:hover{color:var(--signal)}
+
+    @media (prefers-reduced-motion:reduce){ .dot,.status.alert{animation:none} }
+    @media(max-width:1050px){ .stats{grid-template-columns:repeat(2,1fr)} .grid{grid-template-columns:1fr} }
+    @media(max-width:560px){ .stats{grid-template-columns:1fr} .hstat{gap:12px} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
     <header>
-        <div class="logo">YODA<span>PASSIVE RF DETECTION</span></div>
-        <div class="live"><span class="dot" id="dot"></span><span id="status">CONNECTING</span><span class="mono" id="clock"></span></div>
+        <div class="brand">
+            <div class="logo"><b>Y</b>ODA</div>
+            <div class="tag">Passive&nbsp;RF&nbsp;Detection</div>
+        </div>
+        <div class="hstat">
+            <a class="gh" href="https://github.com/nsm-barii/yoda" target="_blank" rel="noopener">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                nsm-barii/yoda
+            </a>
+            <span class="live"><span class="dot" id="dot"></span><span id="status">CONNECTING</span></span>
+            <span class="clock num" id="clock"></span>
+        </div>
     </header>
 
-    <div class="jam clear" id="jam">
-        <div class="icon" id="jam-icon">🛡</div>
+    <div class="status" id="status-bar">
+        <div class="icon" id="st-icon">🛡</div>
         <div>
-            <div class="txt" id="jam-txt">SYSTEM NOMINAL</div>
-            <div class="sub" id="jam-sub">no bluetooth jamming detected</div>
+            <div class="st-txt" id="st-txt">SYSTEM NOMINAL</div>
+            <div class="st-sub" id="st-sub">no bluetooth jamming detected</div>
         </div>
     </div>
 
     <div class="stats">
-        <div class="card" style="--accent:var(--cyan)"><div class="label">BLE Devices</div><div class="val" id="ble-count">0</div><div class="sub">in range</div></div>
-        <div class="card" style="--accent:var(--green)"><div class="label">WiFi APs</div><div class="val" id="ap-count">0</div><div class="sub">access points</div></div>
-        <div class="card" style="--accent:var(--purple)"><div class="label">WiFi Clients</div><div class="val" id="cl-count">0</div><div class="sub">associated</div></div>
-        <div class="card" style="--accent:var(--red)"><div class="label">Drop Score</div><div class="val" id="drop">0<span style="font-size:16px">%</span></div><div class="sub">BLE dropout</div></div>
-        <div class="card" style="--accent:var(--yellow)"><div class="label">Unstable</div><div class="val" id="unstable">0<span style="font-size:16px">%</span></div><div class="sub">rotating MACs</div></div>
+        <div class="card c-ble"><div class="k-label">BLE Devices</div><div class="k-val" id="ble-count">0</div><canvas class="spark" id="sp-ble"></canvas></div>
+        <div class="card c-ap"><div class="k-label">WiFi APs</div><div class="k-val" id="ap-count">0</div><canvas class="spark" id="sp-ap"></canvas></div>
+        <div class="card c-cl"><div class="k-label">WiFi Clients</div><div class="k-val" id="cl-count">0</div><canvas class="spark" id="sp-cl"></canvas></div>
+        <div class="card c-drop"><div class="k-label">Drop Score</div><div class="k-val"><span id="drop">0</span><span class="u">%</span></div><canvas class="spark" id="sp-drop"></canvas></div>
+        <div class="card c-uns"><div class="k-label">Unstable</div><div class="k-val"><span id="unstable">0</span><span class="u">%</span></div><canvas class="spark" id="sp-uns"></canvas></div>
     </div>
 
     <div class="grid">
-        <div class="panel">
-            <h2>Bluetooth / BLE <span class="mono dim" id="ble-n"></span></h2>
+        <section class="panel p-ble">
+            <div class="p-head"><h2><span class="tick">▍</span> Bluetooth · BLE</h2><span class="p-count" id="ble-n">0</span></div>
             <div class="scroll"><table>
                 <thead><tr><th>MAC</th><th>Name</th><th>Vendor</th><th>RSSI</th><th>State</th></tr></thead>
                 <tbody id="ble-tbody"><tr><td class="empty" colspan="5">AWAITING DEVICES…</td></tr></tbody>
             </table></div>
-        </div>
-        <div class="panel">
-            <h2>WiFi Access Points <span class="mono dim" id="wifi-n"></span></h2>
+        </section>
+        <section class="panel p-wifi">
+            <div class="p-head"><h2><span class="tick">▍</span> WiFi · Access Points</h2><span class="p-count" id="wifi-n">0</span></div>
             <div class="scroll"><table>
                 <thead><tr><th>BSSID</th><th>SSID</th><th>Vendor</th><th>Ch</th><th>RSSI</th><th>Clients</th></tr></thead>
                 <tbody id="wifi-tbody"><tr><td class="empty" colspan="6">AWAITING APs…</td></tr></tbody>
             </table></div>
-        </div>
+        </section>
     </div>
+
+    <footer>
+        <span>YODA · passive RF detection appliance</span>
+        <a href="https://github.com/nsm-barii/yoda" target="_blank" rel="noopener">github.com/nsm-barii/yoda</a>
+        <span>made by NSM Barii</span>
+    </footer>
 
 </div>
 
 <script>
     const $ = id => document.getElementById(id);
 
+    const COL = { ble:'#4fd1c5', ap:'#f0b445', cl:'#9b8cff', drop:'#ff4d6a', uns:'#f0b445' };
+    const HIST = { ble:[], ap:[], cl:[], drop:[], uns:[] };
+    const CAP = 48;
+
     function tick(){ $('clock').textContent = new Date().toLocaleTimeString(); }
     tick(); setInterval(tick, 1000);
 
-    function rssiColor(r){ if(r==null) return 'var(--dim2)'; if(r>-60) return 'var(--green)'; if(r>-75) return 'var(--yellow)'; return 'var(--red)'; }
-    function stateTag(s){ const c = s==='offline'?'off':(s==='idle'?'idle':''); return `<span class="tag ${c}">${s}</span>`; }
+    function rssiColor(r){ if(r==null) return '#3a475d'; if(r>-60) return '#3ddc84'; if(r>-75) return '#f0b445'; return '#ff4d6a'; }
+    function stateTag(s){ const c = s==='offline'?'off':(s==='idle'?'idle':(s==='unstable'?'uns':'')); return `<span class="tag ${c}">${s}</span>`; }
+
+    function drawSpark(cv, data, color){
+        const dpr = window.devicePixelRatio || 1;
+        const w = cv.clientWidth, h = cv.clientHeight;
+        if(!w || !h) return;
+        cv.width = w*dpr; cv.height = h*dpr;
+        const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+        ctx.clearRect(0,0,w,h);
+        if(data.length < 2) return;
+        const min = Math.min(...data), max = Math.max(...data), range = (max-min) || 1, pad = 4;
+        const X = i => (i/(data.length-1))*w;
+        const Y = v => h-pad - ((v-min)/range)*(h-pad*2);
+        ctx.beginPath(); ctx.moveTo(0,h);
+        data.forEach((v,i)=> ctx.lineTo(X(i), Y(v)));
+        ctx.lineTo(w,h); ctx.closePath();
+        const g = ctx.createLinearGradient(0,0,0,h);
+        g.addColorStop(0, color+'40'); g.addColorStop(1, color+'00');
+        ctx.fillStyle = g; ctx.fill();
+        ctx.beginPath();
+        data.forEach((v,i)=> i ? ctx.lineTo(X(i),Y(v)) : ctx.moveTo(X(i),Y(v)));
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin='round'; ctx.stroke();
+        const lx = X(data.length-1), ly = Y(data[data.length-1]);
+        ctx.beginPath(); ctx.arc(lx, ly, 2.2, 0, 7); ctx.fillStyle = color; ctx.fill();
+    }
+
+    function push(key, val){ const a = HIST[key]; a.push(val); if(a.length > CAP) a.shift(); }
+    function paintSparks(){
+        drawSpark($('sp-ble'), HIST.ble, COL.ble);
+        drawSpark($('sp-ap'),  HIST.ap,  COL.ap);
+        drawSpark($('sp-cl'),  HIST.cl,  COL.cl);
+        drawSpark($('sp-drop'),HIST.drop,COL.drop);
+        drawSpark($('sp-uns'), HIST.uns, COL.uns);
+    }
 
     const expanded = new Set();
     let D = null;
+
+    function paintWifi(){
+        if(!D) return;
+        const aps = D.wifi.aps;
+        $('wifi-tbody').innerHTML = aps.length ? aps.map(a => {
+            const open = expanded.has(a.bssid), has = a.clients.length > 0;
+            const head = `<tr class="ap${has?' has':''}" data-bssid="${a.bssid}">
+                <td class="mono">${a.bssid}</td>
+                <td class="name">${a.ssid || '<span class="muted">‹hidden›</span>'}</td>
+                <td>${a.vendor || '<span class="muted">—</span>'}</td>
+                <td class="num-cell">${a.channel ?? '—'}</td>
+                <td class="num-cell" style="color:${rssiColor(a.rssi)}">${a.rssi ?? '—'}</td>
+                <td class="num-cell">${has?`<span class="chev">${open?'▼':'▶'}</span> `:'<span class="chev"></span> '}${a.clients.length}</td></tr>`;
+            const kids = (open && has) ? a.clients.map(c => `<tr class="client">
+                <td class="lead"></td>
+                <td class="mono" colspan="2"><span class="lead">└</span> ${c.mac}${c.vendor?`  <span class="muted">· ${c.vendor}</span>`:''}</td>
+                <td></td>
+                <td class="num-cell" style="color:${rssiColor(c.rssi)}">${c.rssi ?? '—'}</td>
+                <td>${stateTag(c.status)}</td></tr>`).join('') : '';
+            return head + kids;
+        }).join('') : '<tr><td class="empty" colspan="6">NO APs</td></tr>';
+    }
 
     async function poll(){
         try{
@@ -127,66 +266,49 @@
             $('dot').className = 'dot';
             $('status').textContent = 'LIVE';
 
-            // JAM STATE
-            const jam = $('jam');
+            // STATUS BAR
+            const bar = $('status-bar');
             if(d.ble.jammed){
-                jam.className = 'jam alert';
-                $('jam-icon').textContent = '⚠';
-                $('jam-txt').textContent  = 'BLUETOOTH JAMMING DETECTED';
-                $('jam-sub').textContent  = `drop score ${d.ble.drop_pct}%  ·  investigate immediately`;
+                bar.className = 'status alert';
+                $('st-icon').textContent = '⚠';
+                $('st-txt').textContent  = 'BLUETOOTH JAMMING DETECTED';
+                $('st-sub').textContent  = `drop score ${d.ble.drop_pct}%  ·  investigate immediately`;
             }else{
-                jam.className = 'jam clear';
-                $('jam-icon').textContent = '🛡';
-                $('jam-txt').textContent  = 'SYSTEM NOMINAL';
-                $('jam-sub').textContent  = 'no bluetooth jamming detected';
+                bar.className = 'status';
+                $('st-icon').textContent = '🛡';
+                $('st-txt').textContent  = 'SYSTEM NOMINAL';
+                $('st-sub').textContent  = 'no bluetooth jamming detected';
             }
 
-            // STATS
+            // STATS + HISTORY
             $('ble-count').textContent = d.ble.count;
             $('ap-count').textContent  = d.wifi.ap_count;
             $('cl-count').textContent  = d.wifi.client_count;
-            $('drop').innerHTML        = d.ble.drop_pct + '<span style="font-size:16px">%</span>';
-            $('unstable').innerHTML    = d.ble.unstable_pct + '<span style="font-size:16px">%</span>';
+            $('drop').textContent      = d.ble.drop_pct;
+            $('unstable').textContent  = d.ble.unstable_pct;
             $('ble-n').textContent     = d.ble.count;
             $('wifi-n').textContent    = d.wifi.ap_count;
 
+            push('ble', d.ble.count); push('ap', d.wifi.ap_count); push('cl', d.wifi.client_count);
+            push('drop', d.ble.drop_pct); push('uns', d.ble.unstable_pct);
+            paintSparks();
+
             // BLE TABLE
             const ble = d.ble.devices;
-            $('ble-tbody').innerHTML = ble.length ? ble.map(x => `<tr>
+            $('ble-tbody').innerHTML = ble.length ? ble.map(x => `<tr class="ble">
                 <td class="mono">${x.mac}</td>
-                <td>${x.name || '<span style="color:var(--dim2)">—</span>'}</td>
-                <td>${x.vendor || '<span style="color:var(--dim2)">—</span>'}</td>
-                <td class="mono" style="color:${rssiColor(x.rssi)}">${x.rssi ?? '—'}</td>
+                <td class="name">${x.name || '<span class="muted">—</span>'}</td>
+                <td>${x.vendor || '<span class="muted">—</span>'}</td>
+                <td class="num-cell" style="color:${rssiColor(x.rssi)}">${x.rssi ?? '—'}</td>
                 <td>${stateTag(x.status)}</td></tr>`).join('')
                 : '<tr><td class="empty" colspan="5">NO DEVICES</td></tr>';
 
-            // WIFI TABLE
             paintWifi();
 
         }catch(e){
             $('dot').className = 'dot off';
             $('status').textContent = 'OFFLINE';
         }
-    }
-    function paintWifi(){
-        if(!D) return;
-        const aps = D.wifi.aps;
-        $('wifi-tbody').innerHTML = aps.length ? aps.map(a => {
-            const open = expanded.has(a.bssid), has = a.clients.length > 0;
-            const head = `<tr class="ap${has?' has':''}" data-bssid="${a.bssid}">
-                <td class="mono">${a.bssid}</td>
-                <td>${a.ssid || '<span style="color:var(--dim2)">‹hidden›</span>'}</td>
-                <td>${a.vendor || '<span style="color:var(--dim2)">—</span>'}</td>
-                <td class="mono">${a.channel ?? '—'}</td>
-                <td class="mono" style="color:${rssiColor(a.rssi)}">${a.rssi ?? '—'}</td>
-                <td class="mono">${has?`<span class="chev">${open?'▾':'▸'}</span> `:''}${a.clients.length}</td></tr>`;
-            const kids = (open && has) ? a.clients.map(c => `<tr class="client">
-                <td></td>
-                <td class="mono" colspan="3">↳ ${c.mac}${c.vendor?`  <span style="color:var(--dim2)">· ${c.vendor}</span>`:''}</td>
-                <td class="mono" style="color:${rssiColor(c.rssi)}">${c.rssi ?? '—'}</td>
-                <td>${stateTag(c.status)}</td></tr>`).join('') : '';
-            return head + kids;
-        }).join('') : '<tr><td class="empty" colspan="6">NO APs</td></tr>';
     }
 
     $('wifi-tbody').addEventListener('click', e => {
@@ -196,6 +318,7 @@
         paintWifi();
     });
 
+    window.addEventListener('resize', paintSparks);
     poll(); setInterval(poll, 1000);
 </script>
 </body>
