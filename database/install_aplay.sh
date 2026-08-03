@@ -1,4 +1,4 @@
 #! /bin/bash 
 
 
-sudo apt install aplay
+sudo apt install pw-play
