@@ -100,7 +100,7 @@ class Variables():
     tts_interval         = 600
     
     pct_set_unstable = 25
-    pct_set_drop     = 25
+    pct_set_drop     = 35
 
     wifi_client_idle    = 120
     wifi_client_offline = 600

@@ -156,7 +156,7 @@ sudo venv/bin/python main.py --help
 | `-i` | Monitor mode interface | `wlan1` |
 | `-ntfy` | ntfy topic — sets **both** the BLE and WiFi topics | off |
 | `--bu` | BLE unstable device threshold % | 25 |
-| `--bd` | BLE drop score threshold % | 25 |
+| `--bd` | BLE drop score threshold % | 35 |
 | `--calm` | Voice status announcement interval when calm (minutes) | 30 |
 | `--jam` | Voice announcement interval during a jam (minutes) | 3 |
 | `--obs` | Obfuscate MACs and SSIDs on the dashboard | off |
