@@ -78,12 +78,19 @@ class Variables():
     ip_local  = False
     verbose   = False
 
+
+    # TTS
+    jammed = False
+    tts_cooldown = 30
+    watcher_cooldown = 60 * 5
+    time_without_incidents = time.time()
+
     
 
     # MONITORING VARS
     iface_monitor = "wlan1"  # FOR MONITOR MODE
     
-    ntfy_ble_path  = False   # opt-in: ntfy topics are public + unauthenticated, so no live default (user sets their own)
+    ntfy_ble_path  = False   
     ntfy_wifi_path = False
     notify_client_events = False
     tts_interval         = 600

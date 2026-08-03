@@ -78,7 +78,7 @@ def main():
 
 
     CLI.main()
-    TTS.init(); TTS.speak_piper(say="Yoda, Made by NSM Barii, now up and running!")
+    TTS.init(); TTS.speak_piper(say="Yoda, Made by NSM Bari, now up and running!")
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
     TUI().run()
 

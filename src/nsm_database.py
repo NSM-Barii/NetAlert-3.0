@@ -1021,6 +1021,71 @@ class Extensions():
         Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
 
 
+        # BAD
+        if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
+
+            msg = "called pct"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+
+            if cls.good_unstable:
+                msg = f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score rising", cause=f"Unstable Devices: {unstables}/{total}")
+                cls.good_unstable = False
+
+        # GOOD
+        elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
+            
+            if not cls.good_unstable:
+                msg = f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}" # unstables: {unstables}/{total}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score recovering", cause=f"Unstable Devices: {unstables}/{total}")
+                cls.good_unstable = True
+
+
+        # BAD
+        if drop_pct > cls.prev_drop_pct and drop_pct > pct_set_drop:
+
+            msg = "called drop"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+           
+            if cls.good_drop:
+                msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+                
+                n = cls.last_count - count
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count} -> {count}  ({n} dropped)\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
+                cls.good_drop = False
+
+
+                TTS.speak_piper(say="Attention: Bluetooth Jamming Attack detected!", force=True); Variables.jammed = True
+
+
+
+        # GOOD
+        elif drop_pct < cls.prev_drop_pct and drop_pct < pct_set_drop / 2:
+
+            if not cls.good_drop: 
+                msg = f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}")
+                cls.good_drop = True
+
+
+
+
+        
+
+        cls.prev_drop_pct     = drop_pct
+        cls.prev_unstable_pct = unstable_pct
+
+
+
 
 
         #if color in valid and cls.last_count != current_count:
@@ -1159,7 +1224,7 @@ class TTS():
 
 
     @classmethod
-    def speak_piper(cls, say, verbose=True, force=False):
+    def speak_piper(cls, say, verbose=True, force=False, jam=False):
         """This will be used to speak tts out of a-play"""
 
 
@@ -1169,11 +1234,18 @@ class TTS():
             try:
 
                 with Variables.LOCK: 
-                    if cls.speaking: return False
+
+                    while True:
+
+                        if cls.speaking and not force: return False 
+                        if not cls.speaking: break
+                        time.sleep(.1)
 
 
                 cls.speaking = True
                 cls.last_spoke = time.time() 
+
+
                 with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
                 if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
                 subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
@@ -1184,8 +1256,37 @@ class TTS():
             except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
 
  
-        if time.time() - cls.last_spoke > 60 and not force: return False
+        if time.time() - cls.last_spoke < Variables.tts_cooldown and not force: return False
+        console.print(time.time() - cls.last_spoke)
         threading.Thread(target=worker, args=(), daemon=True).start()
+
+
+
+    @classmethod
+    def _watcher(cls):
+        """This method will be used to announce at a interval the status of jams detected"""
+
+
+        def worker():
+            """Worker method"""
+
+                
+            while True:
+
+                time.sleep(Variables.watcher_cooldown)
+                seconds = time.time() - Variables.time_without_incidents 
+                if seconds < 60: continue
+                minutes = int(seconds / 60) 
+
+                if Variables.jammed: word = f"{minutes} Minutes since the last BT Jamming Attack. Your welcome"  
+                else:                word = f"{minutes} Minutes without any incidents"
+
+                say = f"Attention: it has been {word}" 
+                cls.speak_piper(say=say, force=True, jam=True)
+
+
+        threading.Thread(target=worker, args=(), daemon=True).start()
+        console.print(f"[bold green][+] Successfully started Watcher thread!")
 
 
 
@@ -1199,7 +1300,8 @@ class TTS():
         try:
 
             cls.voice = PiperVoice.load(MODEL)
-            cls.last_spoke = time.time()
+
+            cls._watcher()
             console.print(f"[bold green][+] Successfully loaded Voice Module!")
  
             return True
