@@ -2,7 +2,7 @@
 
 
 # ETC IMPORTS
-import requests, subprocess, threading, time, wave, os, tempfile
+import requests, subprocess, threading, time, wave, os, tempfile, random
 from pathlib import Path
 from piper.voice import PiperVoice
 
@@ -116,7 +116,7 @@ class Detector():
                 cls.jam_start    = time.time()
                 Variables.jammed = True
                 Variables.time_without_incidents = time.time()
-                TTS.speak_piper(say="Attention: Bluetooth Jamming Attack detected!", force=True)
+                TTS.speak_piper(kind="jam", force=True)
 
             # GOOD
             elif not cls.good_drop and count >= (cls.avg or 1) * 0.8:
@@ -288,7 +288,7 @@ class Detector():
 
             Variables.push_event(f"Deauth frame detected on channel {channel}")
             Notifications.deauth(src=src, dst=dst, channel=channel, ap_ssid=ap_ssid, target=target)
-            TTS.speak_piper(say=f"Warning: WiFi deauthentication attack on channel {channel or 'unknown'}", force=True)
+            TTS.speak_piper(kind="deauth", channel=channel, ap_ssid=ap_ssid, force=True)
 
             cls.last_deauth = time.time()
 
@@ -333,7 +333,7 @@ class Detector():
 
                 Variables.push_event(f"Alert. WiFi AP count {word} to {aps}")
                 Notifications.device_count(device_count=aps, title=f"WiFi APs {word}")
-                TTS.speak_piper(say=f"Attention: WiFi access point count has {word}", force=True)
+                TTS.speak_piper(kind="ap_count", word=word, force=True)
 
                 cls.good_ap = False
 
@@ -767,6 +767,59 @@ class TTS():
 
 
     @classmethod
+    def _fixes(cls):
+        """This will have a list of post and pre words to use in hte watcher to switch up what is said"""
+
+
+        words = [
+            ("ayo listen bro",    "you already know"),
+            ("yo deadass",        "we locked in"),
+            ("peep this",         "on god"),
+            ("yo real quick",     "say less"),
+            ("ayo bari",          "bet"),
+            ("yo we locked in",   "hold it down"),
+            ("listen up bro",     "we up"),
+            ("yo check it",       "no cap"),
+            ("pay attention bro", "stay up bro"),
+            ("ayo",               "we good"),
+            ("yo bro",            "we watching"),
+            ("yo peep it",        "on god bro"),
+            ("lowkey heads up",   "we outside"),
+            ("",                  "you already know"),
+            ("yo deadass",        ""),
+            ("",                  ""),
+        ]
+
+
+        word = random.choice(words)
+
+        return word
+
+
+
+
+    @classmethod
+    def _message(cls, kind, **kw):
+        """This will build the spoken line for a given event so its all in one place"""
+
+
+        if kind == "jam":      return "Attention: Bluetooth jamming attack detected!"
+        if kind == "deauth":   return f"Warning: WiFi deauthentication attack on channel {kw.get('channel') or 'unknown'} from the ap of: {kw.get('ap_ssid') or 'unknown'}"
+        if kind == "ap_count": return f"Attention: WiFi access point count has {kw.get('word')}"
+        if kind == "boot":     return "Yoda, made by NSM Bari, now up and running!"
+        if kind == "jam_on":   return f"Warning: Bluetooth jamming ongoing for {kw.get('minutes', 0)} minutes"
+
+        if kind == "status":
+            pre, post           = cls._fixes()
+            ble, aps, clients, m = kw.get("ble", 0), kw.get("aps", 0), kw.get("clients", 0), kw.get("minutes", 0)
+            core                = f"Area status: {ble} bluetooth devices, {aps} access points and {clients} clients. {m} {'minute' if m > 1 else 'minutes'} without {'any incidents' if m > 1 else 'an incident'}"
+            return ". ".join(p for p in (pre, core, post) if p)
+
+        return kw.get("say", "")
+
+
+
+    @classmethod
     def _audio_env(cls):
         """Route root's audio to the real user's PipeWire session (sudo sets SUDO_UID)."""
 
@@ -779,8 +832,11 @@ class TTS():
 
 
     @classmethod
-    def speak_piper(cls, say, verbose=True, force=False, jam=False):
+    def speak_piper(cls, say=None, kind=None, verbose=True, force=False, **kw):
         """This will be used to speak tts out of a-play"""
+
+
+        if kind: say = cls._message(kind, **kw)
 
 
         def worker():
@@ -835,10 +891,8 @@ class TTS():
 
                 minutes = int((time.time() - Variables.time_without_incidents) / 60)
 
-                if Variables.jammed: say = f"Warning: Bluetooth jamming ongoing for {minutes} minutes"
-                else:                say = f"Area status: {ble} bluetooth devices, {aps} access points, {clients} clients. {minutes} minutes without incidents"
-
-                cls.speak_piper(say=say, force=True)
+                if Variables.jammed: cls.speak_piper(kind="jam_on", minutes=minutes, force=True)
+                else:                cls.speak_piper(kind="status", ble=ble, aps=aps, clients=clients, minutes=minutes, force=True)
 
 
         threading.Thread(target=worker, args=(), daemon=True).start()
@@ -877,4 +931,4 @@ if __name__ == "__main__":
 
     while True:
         time.sleep(.1)
-        TTS.speak_piper(say="Attention, Bluetooth Jamming Detected!")
+        TTS.speak_piper(kind="jam")

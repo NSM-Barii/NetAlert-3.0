@@ -36,6 +36,13 @@ class HTTP_Handler(SimpleHTTPRequestHandler):
     """This will handle dashboard requests"""
 
 
+    def end_headers(self):
+        """Never let the browser cache — the dashboard + /data must always be fresh"""
+
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        super().end_headers()
+
+
     def do_GET(self):
         """Serve /data as live JSON, everything else as a static file from gui/"""
 

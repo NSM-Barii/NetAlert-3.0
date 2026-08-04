@@ -85,7 +85,7 @@ def main():
 
 
     CLI.main(headless=args.headless)
-    TTS.init(); TTS.speak_piper(say="Yoda, Made by NSM Bari, now up and running!")
+    TTS.init(); TTS.speak_piper(kind="boot")
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
 
     Web_Server.init()
