@@ -85,6 +85,7 @@ class Variables():
     tts_cooldown = 30
     watcher_calm = 60 * 30
     watcher_jam  = 60 * 3
+    jam_notify   = False
     time_without_incidents = time.time()
 
     

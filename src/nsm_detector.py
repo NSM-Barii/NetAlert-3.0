@@ -18,6 +18,16 @@ MODEL    = str(Path(__file__).parent.parent / "database" / "en_US-lessac-medium.
 
 
 
+def _dur(seconds):
+    """This will say seconds under a minute, else minutes"""
+
+    s = int(seconds)
+    if s < 60: return f"{s} second{'' if s == 1 else 's'}"
+    m = s // 60
+    return f"{m} minute{'' if m == 1 else 's'}"
+
+
+
 class Detector():
     """Measures detections — houses BLE + WiFi anomaly scoring and the ESP LED output."""
 
@@ -119,7 +129,7 @@ class Detector():
                 TTS.speak_piper(kind="jam", force=True)
 
             # GOOD
-            elif not cls.good_drop and count >= (cls.avg or 1) * 0.8:
+            elif not cls.good_drop and drop_pct < pct_set_drop:
 
                 console.print(f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}")
                 Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}", priority="default")
@@ -528,6 +538,19 @@ class Notifications():
         cls._push_ntfy(headers=headers, data=data, type="ble")
 
 
+    @classmethod
+    def jam_ongoing(cls, seconds, priority="max"):
+        """This will push a repeat alert every --jam interval while a jam is active"""
+
+        headers = {
+            "Title": "Bluetooth Jamming Ongoing",
+            "Priority": priority,
+        }
+        data = f"Jamming still active — {_dur(seconds)} and counting"
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
     # ==========
     #  HEARTBEAT
     # ==========
@@ -821,12 +844,12 @@ class TTS():
         if kind == "deauth":   return f"Warning: WiFi deauthentication attack on channel {kw.get('channel') or 'unknown'} from the ap of: {kw.get('ap_ssid') or 'unknown'}"
         if kind == "ap_count": return f"Attention: WiFi access point count has {kw.get('word')}"
         if kind == "boot":     return "Yoda, made by NSM Bari, now up and running!"
-        if kind == "jam_on":   return f"Warning: Bluetooth jamming ongoing for {kw.get('minutes', 0)} minutes"
+        if kind == "jam_on":   return f"Warning: Bluetooth jamming ongoing for {_dur(kw.get('seconds', 0))}"
 
         if kind == "status":
-            pre, post           = cls._fixes()
-            ble, aps, clients, m = kw.get("ble", 0), kw.get("aps", 0), kw.get("clients", 0), kw.get("minutes", 0)
-            core                = f"Area status: {ble} bluetooth devices, {aps} access points and {clients} clients. {m} {'minute' if m > 1 else 'minutes'} without {'any incidents' if m > 1 else 'an incident'}"
+            pre, post         = cls._fixes()
+            ble, aps, clients = kw.get("ble", 0), kw.get("aps", 0), kw.get("clients", 0)
+            core              = f"Area status: {ble} bluetooth devices, {aps} access points and {clients} clients. It has been {_dur(kw.get('seconds', 0))} without incidents"
             return ". ".join(p for p in (pre, core, post) if p)
 
         return kw.get("say", "")
@@ -903,10 +926,14 @@ class TTS():
                 aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
                 clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
 
-                minutes = int((time.time() - Variables.time_without_incidents) / 60)
+                seconds = time.time() - Variables.time_without_incidents
 
-                if Variables.jammed: cls.speak_piper(kind="jam_on", minutes=minutes, force=True)
-                else:                cls.speak_piper(kind="status", ble=ble, aps=aps, clients=clients, minutes=minutes, force=True)
+                if Variables.jammed:
+                    cls.speak_piper(kind="jam_on", seconds=seconds, force=True)
+                    if Variables.jam_notify: Notifications.jam_ongoing(seconds=seconds)
+
+                else:
+                    cls.speak_piper(kind="status", ble=ble, aps=aps, clients=clients, seconds=seconds, force=True)
 
 
         threading.Thread(target=worker, args=(), daemon=True).start()
