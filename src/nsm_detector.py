@@ -126,7 +126,6 @@ class Detector():
                 cls.jam_start    = time.time()
                 Variables.jammed = True
                 Variables.time_without_incidents = time.time()
-                TTS.speak_piper(kind="jam", force=True)
 
             # GOOD
             elif not cls.good_drop and drop_pct < pct_set_drop:
@@ -298,7 +297,7 @@ class Detector():
 
             Variables.push_event(f"Deauth frame detected on channel {channel}")
             Notifications.deauth(src=src, dst=dst, channel=channel, ap_ssid=ap_ssid, target=target)
-            TTS.speak_piper(kind="deauth", channel=channel, ap_ssid=ap_ssid, force=True)
+            TTS.speak(kind="deauth", channel=channel, ap_ssid=ap_ssid)
 
             cls.last_deauth = time.time()
 
@@ -343,7 +342,7 @@ class Detector():
 
                 Variables.push_event(f"Alert. WiFi AP count {word} to {aps}")
                 Notifications.device_count(device_count=aps, title=f"WiFi APs {word}")
-                TTS.speak_piper(kind="ap_count", word=word, force=True)
+                TTS.speak(kind="ap_count", word=word)
 
                 cls.good_ap = False
 
@@ -783,9 +782,7 @@ class TTS():
     """This class will be reponsible for holding tts logic"""
 
 
-    speaking   = False
-    last_spoke = False
-    waiting     = []
+    speaking = False
 
 
 
@@ -840,11 +837,14 @@ class TTS():
         """This will build the spoken line for a given event so its all in one place"""
 
 
-        if kind == "jam":      return "Attention: Bluetooth jamming attack detected!"
         if kind == "deauth":   return f"Warning: WiFi deauthentication attack on channel {kw.get('channel') or 'unknown'} from the ap of: {kw.get('ap_ssid') or 'unknown'}"
         if kind == "ap_count": return f"Attention: WiFi access point count has {kw.get('word')}"
         if kind == "boot":     return "Yoda, made by NSM Bari, now up and running!"
-        if kind == "jam_on":   return f"Warning: Bluetooth jamming ongoing for {_dur(kw.get('seconds', 0))}"
+
+        if kind == "jam":
+            s = int(kw.get("seconds", 0))
+            if s < 5: return "Attention: Bluetooth jamming attack detected!"
+            return f"Warning: Bluetooth jamming ongoing for {_dur(s)}"
 
         if kind == "status":
             pre, post         = cls._fixes()
@@ -869,71 +869,60 @@ class TTS():
 
 
     @classmethod
-    def speak_piper(cls, say=None, kind=None, verbose=True, force=False, **kw):
-        """This will be used to speak tts out of a-play"""
+    def speak(cls, say=None, kind=None, **kw):
+        """This will speak one line, or skip if already speaking. Returns True if it spoke"""
 
 
         if kind: say = cls._message(kind, **kw)
+        if not say: return False
+
+        with Variables.LOCK:
+            if cls.speaking: return False
+            cls.speaking = True
 
 
         def worker():
-            """worker"""
 
             try:
-
-                while True:
-
-                    with Variables.LOCK:
-                        if cls.speaking and not force: return False
-                        if not cls.speaking: cls.speaking = True; break
-
-                    time.sleep(.1)
-
-
-                cls.last_spoke = time.time()
-
-
                 with wave.open(TTS_WAV, "w") as wav: cls.voice.synthesize_wav(say, wav)
-                if verbose: console.print(f"[green][+] Speaking:[yellow] {say}")
+                console.print(f"[green][+] Speaking:[yellow] {say}")
                 subprocess.run(["pw-play", f"{TTS_WAV}"], env=cls._audio_env(), stderr=subprocess.DEVNULL)
-            
-                with Variables.LOCK: cls.speaking = False; return True
+
+            except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}")
+
+            finally: cls.speaking = False
 
 
-            except Exception as e: console.print(f"[bold red][!] Exception Error:[yellow] {e}"); return False
-
- 
-        if time.time() - cls.last_spoke < Variables.tts_cooldown and not force: return False
-        console.print(time.time() - cls.last_spoke)
         threading.Thread(target=worker, args=(), daemon=True).start()
+        return True
 
 
 
     @classmethod
     def _watcher(cls):
-        """This method will be used to announce at a interval the status of jams detected"""
+        """This runs forever and speaks whatever the state calls for — one at a time, no overlap"""
 
 
         def worker():
-            """Worker method"""
 
-                
+            last_status = time.time()
+
             while True:
 
-                time.sleep(Variables.watcher_jam if Variables.jammed else Variables.watcher_calm)
-
-                ble     = Variables.ble_current
-                aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
-                clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
-
-                seconds = time.time() - Variables.time_without_incidents
+                time.sleep(.1)
 
                 if Variables.jammed:
-                    cls.speak_piper(kind="jam_on", seconds=seconds, force=True)
-                    if Variables.jam_notify: Notifications.jam_ongoing(seconds=seconds)
+                    seconds = time.time() - Variables.time_without_incidents
+                    if cls.speak(kind="jam", seconds=seconds) and Variables.jam_notify:
+                        Notifications.jam_ongoing(seconds=seconds)
 
-                else:
-                    cls.speak_piper(kind="status", ble=ble, aps=aps, clients=clients, seconds=seconds, force=True)
+                elif time.time() - last_status >= Variables.watcher_calm:
+                    ble     = Variables.ble_current
+                    aps     = sum(1 for ap in list(Variables.live_map_wifi.values()) if time.time() - ap.get("last_seen", 0) <= Variables.wifi_ap_stale)
+                    clients = sum(1 for ap in list(Variables.live_map_wifi.values()) for c in list(ap.get("clients", {}).values()) if c.get("status") in ("online", "idle"))
+                    seconds = time.time() - Variables.time_without_incidents
+                    if cls.speak(kind="status", ble=ble, aps=aps, clients=clients, seconds=seconds):
+                        last_status = time.time()
 
 
         threading.Thread(target=worker, args=(), daemon=True).start()
@@ -969,7 +958,6 @@ class TTS():
 if __name__ == "__main__":
 
     TTS.init()
+    Variables.jammed = True
 
-    while True:
-        time.sleep(.1)
-        TTS.speak_piper(kind="jam")
+    while True: time.sleep(1)

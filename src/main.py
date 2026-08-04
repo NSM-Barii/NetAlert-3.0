@@ -87,7 +87,7 @@ def main():
 
 
     CLI.main(headless=args.headless)
-    TTS.init(); TTS.speak_piper(kind="boot")
+    TTS.init(); TTS.speak(kind="boot")
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
 
     Web_Server.init()
