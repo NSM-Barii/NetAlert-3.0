@@ -58,7 +58,7 @@ def main():
     parser.add_argument("--obs",  action="store_true", help="Obfuscate MACs and SSIDs on the dashboard")
     parser.add_argument("--headless", action="store_true", help="Skip the interactive setup — use flags + defaults (for 24/7 / systemd)")
     parser.add_argument("--calm", type=int, default=None, help="Voice status announcement interval when calm (minutes, default 30)")
-    parser.add_argument("--jam",  type=int, default=None, help="Voice announcement interval during a jam (minutes, default 3)")
+    parser.add_argument("--jam",  type=int, default=None, help="Voice announcement interval during a jam (seconds, default 180)")
 
 
     args = parser.parse_args()
@@ -76,7 +76,7 @@ def main():
     if args.bu   is not None:  Variables.pct_set_unstable = args.bu
     if args.bd   is not None:  Variables.pct_set_drop     = args.bd
     if args.calm is not None:  Variables.watcher_calm     = args.calm * 60
-    if args.jam  is not None:  Variables.watcher_jam      = args.jam  * 60
+    if args.jam  is not None:  Variables.watcher_jam      = args.jam
 
 
 
