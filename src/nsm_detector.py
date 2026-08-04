@@ -50,7 +50,7 @@ class Detector():
         jam_start         = 0
         thaw_after        = 60 * 20
         thaw_alpha        = 0.005
-        drop_streak       = 0
+        drop_streak       = 1
 
 
         @classmethod
