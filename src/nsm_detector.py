@@ -44,7 +44,7 @@ class Detector():
         prev_unstable_pct = 0
         unstable_devices  = set()
         started           = None
-        floor             = 5
+        floor             = 4
         jam_start         = 0
         thaw_after        = 60 * 20
         thaw_alpha        = 0.005
