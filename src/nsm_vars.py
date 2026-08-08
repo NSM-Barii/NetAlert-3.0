@@ -102,6 +102,7 @@ class Variables():
     
     pct_set_unstable = 25
     pct_set_drop     = 35
+    jam_consistent   = 2
 
     wifi_client_idle    = 120
     wifi_client_offline = 600

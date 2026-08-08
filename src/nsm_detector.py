@@ -42,15 +42,13 @@ class Detector():
         last_count        = 0
         prev_drop_pct     = 0
         prev_unstable_pct = 0
-        good_drop         = True
-        good_unstable     = True
         unstable_devices  = set()
         started           = None
         floor             = 5
         jam_start         = 0
         thaw_after        = 60 * 20
         thaw_alpha        = 0.005
-        drop_streak       = 1
+        jam_hits          = 0
 
 
         @classmethod
@@ -75,67 +73,29 @@ class Detector():
 
         @classmethod
         def _score(cls, total, unstables, count):
-            """Turn the counts into drop/unstable % and fire rising/recovering alerts"""
+            """One score vs the trigger (Variables.pct_set_drop) — over it = jam on, under = off"""
 
 
-            unstable_ratio = unstables / total
-            drop_score     = ((cls.avg or 1) - count) / (cls.avg or 1)
+            unstable_pct = round((unstables / total) * 100, 2)
+            drop_pct     = round((((cls.avg or 1) - count) / (cls.avg or 1)) * 100, 2)
 
-            unstable_pct = round(unstable_ratio * 100, 2)
-            drop_pct     = round(drop_score * 100, 2)
+            score = max(drop_pct, unstable_pct)
+            over  = score > Variables.pct_set_drop and cls.avg >= cls.floor
 
-
-            pct_set_unstable = Variables.pct_set_unstable
-            pct_set_drop     = Variables.pct_set_drop
-
-            console.print("[dim][+] Called: score[/dim]")
-
-            # BAD
-            if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
-
-                console.print("[dim][+] Called: unstable[/dim]")
-
-                if cls.good_unstable:
-                    console.print(f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}")
-                    Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score rising", cause=f"Unstable Devices: {unstables}/{total}")
-                    cls.good_unstable = False
-
-            # GOOD
-            elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
-
-                if not cls.good_unstable:
-                    console.print(f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}")
-                    Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score recovering", cause=f"Unstable Devices: {unstables}/{total}", priority="default")
-                    cls.good_unstable = True
+            cls.jam_hits = cls.jam_hits + 1 if over else 0
+            jam          = cls.jam_hits >= Variables.jam_consistent
 
 
-            if drop_pct > pct_set_drop and cls.avg >= cls.floor: cls.drop_streak += 1
-            else:                                                cls.drop_streak = 0
+            if jam != Variables.jammed:
 
-
-            # BAD
-            if cls.drop_streak >= 2 and cls.good_drop:
-
-                console.print("[dim][+] Called: drop[/dim]")
-                console.print(f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}")
-
-                n = cls.last_count - count
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count} -> {count}  ({n} dropped)\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
-
-                cls.good_drop    = False
-                cls.jam_start    = time.time()
-                Variables.jammed = True
+                Variables.jammed = jam
                 Variables.time_without_incidents = time.time()
 
-            # GOOD
-            elif not cls.good_drop and drop_pct < pct_set_drop:
+                if jam:
+                    cls.jam_start = time.time()
+                    Notifications.drop_pct(drop_pct=score, title="BLE Jamming detected", cause=f"Score {score}% over {Variables.pct_set_drop}%  (drop {drop_pct} / unstable {unstable_pct})")
 
-                console.print(f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}")
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}", priority="default")
-
-                cls.good_drop    = True
-                Variables.jammed = False
-                Variables.time_without_incidents = time.time()
+                console.print(f"[bold {'red' if jam else 'green'}][{'!] JAM' if jam else '+] clear'}:[/] {score}%  (drop {drop_pct} / unstable {unstable_pct})")
 
 
             cls.prev_drop_pct     = drop_pct
